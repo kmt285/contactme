@@ -4,34 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Contact</title>
-    <style>body {font-family: sans-serif; padding: 20px;} textarea, button {width: 100%; margin-top: 10px;}</style>
+    <style>
+        /* Retro Windows 95/98 Style CSS */
+        body {
+            background-color: #008080; /* Classic Windows Teal Background */
+            font-family: 'MS Sans Serif', Tahoma, Geneva, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 3D Window Frame */
+        .window {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #808080;
+            padding: 2px;
+        }
+
+        .main-window {
+            width: 90%;
+            max-width: 450px;
+        }
+
+        /* Dark Blue Title Bar */
+        .title-bar {
+            background-color: #000080;
+            color: #ffffff;
+            padding: 3px 5px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-content {
+            padding: 15px;
+        }
+
+        /* Inset 3D Text Area */
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 8px;
+            font-family: 'Courier New', Courier, monospace; /* Classic Typewriter Font */
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+
+        /* Outset 3D Button */
+        button {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 6px 15px;
+            font-family: 'MS Sans Serif', Tahoma, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            outline: none;
+        }
+
+        /* Button click effect */
+        button:active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 7px 14px 5px 16px; /* Offset content to look pressed */
+        }
+
+        /* --- Custom Alert Modal (Replaces default alert) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .alert-window {
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .alert-content {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .alert-text {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+        }
+
+        /* Small X close button */
+        .close-btn {
+            width: auto;
+            margin: 0;
+            padding: 0 5px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
-    <h2>Contact Me</h2>
-    <textarea id="msgBox" rows="6" placeholder="Write your message here..."></textarea>
-    <button onclick="sendMessage()">Send Message</button>
+
+    <!-- Main Contact Window -->
+    <div class="window main-window">
+        <div class="title-bar">
+            <span>Contact Messenger</span>
+        </div>
+        <div class="window-content">
+            <textarea id="msgBox" rows="8" placeholder="Type your message here..."></textarea>
+            <button id="sendBtn" onclick="sendMessage()">Send Message</button>
+        </div>
+    </div>
+
+    <!-- Custom Alert Box (Hidden by default) -->
+    <div id="customAlert" class="modal-overlay">
+        <div class="window alert-window">
+            <div class="title-bar">
+                <span id="alertTitle">System Message</span>
+                <button class="close-btn" onclick="closeAlert()">X</button>
+            </div>
+            <div class="window-content alert-content">
+                <p id="alertText" class="alert-text"></p>
+                <button onclick="closeAlert()">OK</button>
+            </div>
+        </div>
+    </div>
 
     <script>
+    // Custom Alert ကို ခေါ်သုံးမည့် Function
+    function showAlert(title, message) {
+        document.getElementById('alertTitle').innerText = title;
+        document.getElementById('alertText').innerText = message;
+        document.getElementById('customAlert').style.display = 'flex';
+    }
+
+    function closeAlert() {
+        document.getElementById('customAlert').style.display = 'none';
+    }
+
     async function sendMessage() {
         const msg = document.getElementById('msgBox').value;
-        if(!msg) return alert("Please write a message");
-        
-        document.querySelector('button').innerText = "Sending...";
-        
-        // Message အစစ်ကိုပဲ Render ဆီ လှမ်းပို့ပါမယ် (Render ကမှ ဆက်ပြီး ကုဒ်ဝှက်ပါမယ်)
-        const res = await fetch('/api/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
-        });
+        const btn = document.getElementById('sendBtn');
 
-        if(res.ok) {
-            alert("Message sent!");
-            document.getElementById('msgBox').value = '';
-        } else {
-            alert("Failed to send");
+        // စာမရေးဘဲ ပို့ရင် Custom Alert ပြမည်
+        if(!msg.trim()) {
+            return showAlert("Error", "Please write a message first.");
         }
-        document.querySelector('button').innerText = "Send Message";
+        
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+        
+        try {
+            const res = await fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+
+            if(res.ok) {
+                // အောင်မြင်ရင် Custom Alert ပြမည်
+                showAlert("Success", "Message sent securely!");
+                document.getElementById('msgBox').value = '';
+            } else {
+                showAlert("Error", "Failed to send message.");
+            }
+        } catch (error) {
+            showAlert("Error", "Network connection failed.");
+        }
+
+        btn.innerText = "Send Message";
+        btn.disabled = false;
     }
     </script>
 </body>
