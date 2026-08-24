@@ -89,13 +89,24 @@
         document.getElementById('retroModal').style.display = 'none';
     }
 
-    // ဖိုင်နာမည်မှ အချိန်ကို တိကျသေသပ်သော ပုံစံသို့ ပြောင်းပေးမည့် Function
-    // ဥပမာ - msg_2026-08-24T12-19-01-194Z.txt -> 2026-08-24 12:19:01
+    // ဖိုင်နာမည် (UTC Time) မှ မြန်မာစံတော်ချိန်သို့ တိကျစွာ ပြောင်းလဲပေးမည့် Function
     function formatTimestamp(filename) {
         const match = filename.match(/msg_(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})/);
         if (match) {
             const [_, year, month, day, hour, minute, second] = match;
-            return `${year}-${month}-${day}  ${hour}:${minute}:${second}`;
+
+            const utcDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
+
+            return utcDate.toLocaleString('en-US', { 
+                timeZone: 'Asia/Rangoon', // မြန်မာစံတော်ချိန် အတိအကျ
+                year: 'numeric',
+                month: 'short', // ဥပမာ - Aug
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true // AM / PM ဖြင့်ပြရန်
+            });
         }
         return filename;
     }
