@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Contact</title>
+    <style>body {font-family: sans-serif; padding: 20px;} textarea, button {width: 100%; margin-top: 10px;}</style>
+</head>
+<body>
+    <h2>Contact Me</h2>
+    <textarea id="msgBox" rows="6" placeholder="Write your message here..."></textarea>
+    <button onclick="sendMessage()">Send Message</button>
+
+    <script>
+    async function sendMessage() {
+        const msg = document.getElementById('msgBox').value;
+        if(!msg) return alert("Please write a message");
+        
+        document.querySelector('button').innerText = "Sending...";
+        
+        // Message အစစ်ကိုပဲ Render ဆီ လှမ်းပို့ပါမယ် (Render ကမှ ဆက်ပြီး ကုဒ်ဝှက်ပါမယ်)
+        const res = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        });
+
+        if(res.ok) {
+            alert("Message sent!");
+            document.getElementById('msgBox').value = '';
+        } else {
+            alert("Failed to send");
+        }
+        document.querySelector('button').innerText = "Send Message";
+    }
+    </script>
+</body>
+</html>
