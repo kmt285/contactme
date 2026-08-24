@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>body {font-family: monospace; padding: 20px;} input, button {width: 100%; margin-top: 10px; padding: 10px;}</style>
+</head>
+<body>
+    <h2>Admin Secret Dashboard</h2>
+    <input type="password" id="adminPass" placeholder="Enter your Secret Password">
+    <button onclick="fetchMessages()">View Messages</button>
+    <div id="messagesArea" style="margin-top: 20px;"></div>
+
+    <script>
+    async function fetchMessages() {
+        const adminPass = document.getElementById('adminPass').value;
+        document.getElementById('messagesArea').innerHTML = "Loading...";
+
+        const res = await fetch('/api/get-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminPassword: adminPass })
+        });
+        
+        if(!res.ok) return document.getElementById('messagesArea').innerHTML = "<b style='color:red;'>Wrong Password!</b>";
+        
+        const messages = await res.json();
+        if(messages.length === 0) return document.getElementById('messagesArea').innerHTML = "No messages yet.";
+
+        let html = '';
+        messages.forEach(msg => {
+            html += `<div style="border:1px solid #ccc; padding:10px; margin-top:10px; background:#f9f9f9;">
+                        <small style="color:gray;">${msg.name}</small>
+                        <p style="font-size:16px;">${msg.content || "Error reading message"}</p>
+                     </div>`;
+        });
+        document.getElementById('messagesArea').innerHTML = html;
+    }
+    </script>
+</body>
+</html>
