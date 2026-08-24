@@ -1,158 +1,84 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <style>
-        /* Retro Windows 95 Style */
-        body { font-family: 'MS Sans Serif', Tahoma, sans-serif; padding: 20px; background-color: #008080; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;}
-        .container { width: 100%; max-width: 600px; margin-top: 20px; background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 2px; box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #808080; }
-        .title-bar { background: #000080; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; margin-bottom: 10px;}
-        .content { padding: 10px; }
-        input { width: 100%; box-sizing: border-box; padding: 6px; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #fff; border-bottom: 2px solid #fff; outline: none; margin-bottom: 10px; background: #fff;}
-        button { background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 15px; font-weight: bold; cursor: pointer; outline: none; width: 100%; font-family: 'MS Sans Serif', Tahoma, sans-serif;}
-        button:active { border-top: 2px solid #000; border-left: 2px solid #000; border-right: 2px solid #fff; border-bottom: 2px solid #fff; }
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { Octokit } = require('@octokit/rest');
+const CryptoJS = require('crypto-js');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+const OWNER = process.env.GITHUB_OWNER;
+const REPO = process.env.GITHUB_REPO;
+const PASSWORD = process.env.ADMIN_PASSWORD;
+
+// (၁) စာလက်ခံပြီး သိမ်းမည့် API
+app.post('/api/send', async (req, res) => {
+    try {
+        const { message } = req.body;
+        const encryptedMessage = CryptoJS.AES.encrypt(message, PASSWORD).toString();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `messages/msg_${timestamp}.txt`;
+
+        await octokit.repos.createOrUpdateFileContents({
+            owner: OWNER,
+            repo: REPO,
+            path: filename,
+            message: `New message at ${timestamp}`,
+            content: Buffer.from(encryptedMessage).toString('base64')
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// (၂) Admin က စာဖတ်မည့် API
+app.post('/api/get-messages', async (req, res) => {
+    const { adminPassword } = req.body;
+    if (adminPassword !== PASSWORD) return res.status(401).send("Unauthorized");
+
+    try {
+        const { data: files } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: 'messages' });
+        let messagesList = [];
         
-        /* Message Card */
-        .msg-card { background: #fff; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #fff; border-bottom: 2px solid #fff; padding: 10px; margin-top: 15px; }
-        
-        /* Small Delete Button */
-        .del-btn { width: auto; background: #c0c0c0; color: #ff0000; float: right; padding: 2px 8px; font-size: 12px; margin-left: 10px;}
-
-        /* --- Custom Retro Modal (Alert & Confirm) --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3); display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .retro-window {
-            width: 80%; max-width: 320px; background: #c0c0c0;
-            border-top: 2px solid #fff; border-left: 2px solid #fff;
-            border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 2px;
-        }
-        .retro-content { padding: 15px; text-align: center; font-size: 13px; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="title-bar">Secret Admin Dashboard</div>
-        <div class="content">
-            <input type="password" id="adminPass" placeholder="Enter your Secret Password">
-            <button onclick="fetchMessages()">View Messages</button>
-            <div id="messagesArea" style="margin-top: 10px;"></div>
-        </div>
-    </div>
-
-    <!-- Custom Retro Alert/Confirm Modal -->
-    <div id="retroModal" class="modal-overlay">
-        <div class="retro-window">
-            <div class="title-bar"><span id="modalTitle">System Message</span></div>
-            <div class="retro-content">
-                <p id="modalText" style="margin: 0 0 15px 0;"></p>
-                <div id="modalButtons"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // Custom Modal ပြသရန် Function (Alert & Confirm နှစ်ခုလုံးအတွက် သုံးနိုင်သည်)
-    function showModal(title, text, isConfirm = false) {
-        return new Promise((resolve) => {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalText').innerText = text;
-            const btnContainer = document.getElementById('modalButtons');
-            btnContainer.innerHTML = '';
-
-            if (isConfirm) {
-                const yesBtn = document.createElement('button');
-                yesBtn.innerText = "Yes";
-                yesBtn.onclick = () => { closeModal(); resolve(true); };
+        for (let file of files) {
+            if(file.name.endsWith('.txt')) {
+                const { data: fileData } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: file.path });
+                const encryptedText = Buffer.from(fileData.content, 'base64').toString('utf-8');
+                const bytes = CryptoJS.AES.decrypt(encryptedText, PASSWORD);
+                const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
                 
-                const noBtn = document.createElement('button');
-                noBtn.innerText = "No";
-                noBtn.onclick = () => { closeModal(); resolve(false); };
-                
-                btnContainer.appendChild(yesBtn);
-                btnContainer.appendChild(noBtn);
-            } else {
-                const okBtn = document.createElement('button');
-                okBtn.innerText = "OK";
-                okBtn.onclick = () => { closeModal(); resolve(true); };
-                btnContainer.appendChild(okBtn);
+                // sha ကိုပါ ထည့်ပို့ပေးမည် (ဖျက်သည့်အခါ အသုံးပြုရန်)
+                messagesList.push({ name: file.name, content: decryptedText, sha: file.sha });
             }
-            document.getElementById('retroModal').style.display = 'flex';
-        });
-    }
-
-    function closeModal() {
-        document.getElementById('retroModal').style.display = 'none';
-    }
-
-    // ဖိုင်နာမည်မှ အချိန်ကို တိကျသေသပ်သော ပုံစံသို့ ပြောင်းပေးမည့် Function
-    // ဥပမာ - msg_2026-08-24T12-19-01-194Z.txt -> 2026-08-24 12:19:01
-    function formatTimestamp(filename) {
-        const match = filename.match(/msg_(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})/);
-        if (match) {
-            const [_, year, month, day, hour, minute, second] = match;
-            return `${year}-${month}-${day}  ${hour}:${minute}:${second}`;
         }
-        return filename;
+        res.status(200).json(messagesList);
+    } catch (error) {
+        res.status(200).json([]);
     }
+});
 
-    // (၁) Message များကို ဆွဲယူခြင်း
-    async function fetchMessages() {
-        const adminPass = document.getElementById('adminPass').value;
-        document.getElementById('messagesArea').innerHTML = "<p style='text-align:center;'>Loading...</p>";
+// (၃) Message ကို GitHub မှ အပြီးတိုင် ဖျက်မည့် API အသစ်
+app.post('/api/delete', async (req, res) => {
+    const { adminPassword, filename, sha } = req.body;
+    if (adminPassword !== PASSWORD) return res.status(401).send("Unauthorized");
 
-        const res = await fetch('/api/get-messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPassword: adminPass })
+    try {
+        await octokit.repos.deleteFile({
+            owner: OWNER,
+            repo: REPO,
+            path: `messages/${filename}`,
+            message: `Deleted ${filename} via Admin Panel`,
+            sha: sha // ဖျက်ရန်အတွက် sha မဖြစ်မနေ လိုအပ်ပါသည်
         });
-        
-        if(!res.ok) {
-            document.getElementById('messagesArea').innerHTML = "";
-            return showModal("Error", "Wrong Password!");
-        }
-        
-        const messages = await res.json();
-        if(messages.length === 0) {
-            return document.getElementById('messagesArea').innerHTML = "<p style='text-align:center; color:#555;'>No messages yet.</p>";
-        }
-
-        let html = '';
-        messages.forEach(msg => {
-            const formattedTime = formatTimestamp(msg.name);
-            html += `<div class="msg-card">
-                        <button class="del-btn" onclick="deleteMessage('${msg.name}', '${msg.sha}')">Delete</button>
-                        <small style="color: #000080; font-weight: bold;">📅 ${formattedTime}</small>
-                        <p style="font-size:15px; margin: 8px 0 0 0; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; word-break: break-all;">${msg.content || "Error reading message"}</p>
-                     </div>`;
-        });
-        document.getElementById('messagesArea').innerHTML = html;
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
     }
+});
 
-    // (၂) Message ကို ဖျက်ခြင်း (Custom Confirm ဖြင့်)
-    async function deleteMessage(filename, sha) {
-        const confirmed = await showModal("Confirm Delete", "Are you sure you want to completely delete this message?", true);
-        if(!confirmed) return;
-
-        const adminPass = document.getElementById('adminPass').value;
-        
-        const res = await fetch('/api/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPassword: adminPass, filename: filename, sha: sha })
-        });
-
-        if(res.ok) {
-            await showModal("Success", "Message deleted successfully!");
-            fetchMessages(); 
-        } else {
-            await showModal("Error", "Failed to delete message.");
-        }
-    }
-    </script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Server is running'));
