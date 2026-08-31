@@ -89,7 +89,7 @@
 
         function customAlert(message, title = "System Message") {
             document.getElementById('alertTitle').innerText = title;
-            document.getElementById('alertMsg').innerHTML = `<span>💬</span> <div>${message}</div>`;
+            document.getElementById('alertMsg').innerHTML = `<span></span> <div>${message}</div>`;
             document.getElementById('customAlertOverlay').style.display = 'block';
         }
         function closeAlert() { document.getElementById('customAlertOverlay').style.display = 'none'; }
@@ -181,7 +181,7 @@
                     <button class="close-btn" onclick="closeWindow('${winId}')">X</button>
                 </div>
                 <div style="background: #e0e0e0; padding: 4px; display:none; border-bottom: inset 2px;" id="toolbar_${winId}">
-                    <button onclick="goBack('${winId}')" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">⬅️ Back</button>
+                    <button onclick="goBack('${winId}')" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">Back</button>
                 </div>
                 <div class="window-content" id="content_${winId}"></div>
             `;
