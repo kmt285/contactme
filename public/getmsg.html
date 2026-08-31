@@ -3,167 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin OS Control Panel</title>
     <style>
-        /* Retro Windows 95 Style */
-        body { font-family: 'MS Sans Serif', Tahoma, sans-serif; padding: 20px; background-color: #008080; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;}
-        .container { width: 100%; max-width: 600px; margin-top: 20px; background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 2px; box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #808080; }
+        body { font-family: 'MS Sans Serif', Tahoma, sans-serif; background: #008080; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 700px; background: #c0c0c0; border: outset 2px; padding: 3px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
         .title-bar { background: #000080; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; margin-bottom: 10px;}
-        .content { padding: 10px; }
-        input { width: 100%; box-sizing: border-box; padding: 6px; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #fff; border-bottom: 2px solid #fff; outline: none; margin-bottom: 10px; background: #fff;}
-        button { background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 15px; font-weight: bold; cursor: pointer; outline: none; width: 100%; font-family: 'MS Sans Serif', Tahoma, sans-serif;}
-        button:active { border-top: 2px solid #000; border-left: 2px solid #000; border-right: 2px solid #fff; border-bottom: 2px solid #fff; }
         
-        /* Message Card */
-        .msg-card { background: #fff; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #fff; border-bottom: 2px solid #fff; padding: 10px; margin-top: 15px; }
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 2px solid #fff; margin-bottom: 10px; }
+        .tab { background: #c0c0c0; border: outset 2px; border-bottom: none; padding: 5px 15px; cursor: pointer; font-weight: bold; margin-right: 2px; }
+        .tab.active { background: #dfdfdf; border: inset 2px; border-bottom: none; }
         
-        /* Small Delete Button */
-        .del-btn { width: auto; background: #c0c0c0; color: #ff0000; float: right; padding: 2px 8px; font-size: 12px; margin-left: 10px;}
-
-        /* --- Custom Retro Modal (Alert & Confirm) --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3); display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .retro-window {
-            width: 80%; max-width: 320px; background: #c0c0c0;
-            border-top: 2px solid #fff; border-left: 2px solid #fff;
-            border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 2px;
-        }
-        .retro-content { padding: 15px; text-align: center; font-size: 13px; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .tab-content { display: none; padding: 10px; background: #dfdfdf; border: inset 2px; min-height: 300px; }
+        .tab-content.active { display: block; }
+        
+        input, textarea { width: 100%; box-sizing: border-box; padding: 6px; border: inset 2px; margin-bottom: 10px; outline: none; }
+        button { background: #c0c0c0; border: outset 2px; padding: 6px 15px; font-weight: bold; cursor: pointer; }
+        button:active { border: inset 2px; }
+        
+        .msg-card { background: #fff; border: inset 2px; padding: 10px; margin-bottom: 10px; }
+        .del-btn { background: #c0c0c0; color: red; float: right; padding: 2px 8px; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="title-bar">Secure Contact</div>
-        <div class="content">
-            <input type="password" id="adminPass" placeholder="Enter your Secret Password">
-            <button onclick="fetchMessages()">View Messages</button>
-            <div id="messagesArea" style="margin-top: 10px;"></div>
+        <div class="title-bar">OS Control Panel</div>
+        
+        <!-- Login Area -->
+        <div style="padding: 10px; background: #dfdfdf; border: inset 2px; margin-bottom: 10px;">
+            <input type="password" id="adminPass" placeholder="Enter Admin Password">
         </div>
-    </div>
 
-    <!-- Custom Retro Alert/Confirm Modal -->
-    <div id="retroModal" class="modal-overlay">
-        <div class="retro-window">
-            <div class="title-bar"><span id="modalTitle">System Message</span></div>
-            <div class="retro-content">
-                <p id="modalText" style="margin: 0 0 15px 0;"></p>
-                <div id="modalButtons"></div>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('messages')">Messages</div>
+            <div class="tab" onclick="switchTab('desktop')">Desktop Icons</div>
+        </div>
+
+        <!-- Messages Tab -->
+        <div id="messages" class="tab-content active">
+            <button onclick="fetchMessages()" style="width: 100%; margin-bottom: 10px;">Load Messages</button>
+            <div id="messagesArea"></div>
+        </div>
+
+        <!-- Desktop Config Tab -->
+        <div id="desktop" class="tab-content">
+            <p style="font-size: 12px; font-weight: bold;">Edit Desktop Items (JSON Format)</p>
+            <textarea id="configEditor" rows="15" style="font-family: monospace; font-size: 13px;"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="loadConfig()" style="flex: 1;">Load Config</button>
+                <button onclick="saveConfig()" style="flex: 1; background: #000080; color: white;">Save Config</button>
             </div>
+            <p style="font-size: 11px; margin-top: 10px; color: #555;">* "type" can be: "app", "text", or "link".</p>
         </div>
     </div>
 
     <script>
-    // Custom Modal ပြသရန် Function (Alert & Confirm နှစ်ခုလုံးအတွက် သုံးနိုင်သည်)
-    function showModal(title, text, isConfirm = false) {
-        return new Promise((resolve) => {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalText').innerText = text;
-            const btnContainer = document.getElementById('modalButtons');
-            btnContainer.innerHTML = '';
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
 
-            if (isConfirm) {
-                const yesBtn = document.createElement('button');
-                yesBtn.innerText = "Yes";
-                yesBtn.onclick = () => { closeModal(); resolve(true); };
-                
-                const noBtn = document.createElement('button');
-                noBtn.innerText = "No";
-                noBtn.onclick = () => { closeModal(); resolve(false); };
-                
-                btnContainer.appendChild(yesBtn);
-                btnContainer.appendChild(noBtn);
-            } else {
-                const okBtn = document.createElement('button');
-                okBtn.innerText = "OK";
-                okBtn.onclick = () => { closeModal(); resolve(true); };
-                btnContainer.appendChild(okBtn);
-            }
-            document.getElementById('retroModal').style.display = 'flex';
-        });
-    }
-
-    function closeModal() {
-        document.getElementById('retroModal').style.display = 'none';
-    }
-
-    // ဖိုင်နာမည် (UTC Time) မှ မြန်မာစံတော်ချိန်သို့ တိကျစွာ ပြောင်းလဲပေးမည့် Function
-    function formatTimestamp(filename) {
-        const match = filename.match(/msg_(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})/);
-        if (match) {
-            const [_, year, month, day, hour, minute, second] = match;
-
-            const utcDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
-
-            return utcDate.toLocaleString('en-US', { 
-                timeZone: 'Asia/Rangoon', // မြန်မာစံတော်ချိန် အတိအကျ
-                year: 'numeric',
-                month: 'short', // ဥပမာ - Aug
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true // AM / PM ဖြင့်ပြရန်
+        // Fetch Messages
+        async function fetchMessages() {
+            const pass = document.getElementById('adminPass').value;
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = "Loading...";
+            
+            const res = await fetch('/api/get-messages', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminPassword: pass })
             });
+            if(!res.ok) return area.innerHTML = "Wrong Password!";
+            
+            const msgs = await res.json();
+            if(msgs.length === 0) return area.innerHTML = "No messages.";
+            
+            area.innerHTML = msgs.map(m => `
+                <div class="msg-card">
+                    <button class="del-btn" onclick="deleteMessage('${m.name}', '${m.sha}')">Delete</button>
+                    <small><b>${m.name.replace('msg_','').replace('.txt','')}</b></small>
+                    <pre style="margin: 5px 0 0; white-space: pre-wrap; word-break: break-all;">${m.content}</pre>
+                </div>
+            `).join('');
         }
-        return filename;
-    }
 
-    // (၁) Message များကို ဆွဲယူခြင်း
-    async function fetchMessages() {
-        const adminPass = document.getElementById('adminPass').value;
-        document.getElementById('messagesArea').innerHTML = "<p style='text-align:center;'>Loading...</p>";
+        async function deleteMessage(filename, sha) {
+            if(!confirm("Are you sure?")) return;
+            const pass = document.getElementById('adminPass').value;
+            await fetch('/api/delete', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminPassword: pass, filename, sha })
+            });
+            fetchMessages();
+        }
 
-        const res = await fetch('/api/get-messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPassword: adminPass })
-        });
+        // Load & Save Desktop Config
+        async function loadConfig() {
+            const res = await fetch('/api/get-config');
+            const data = await res.json();
+            document.getElementById('configEditor').value = JSON.stringify(data, null, 4);
+        }
+
+        async function saveConfig() {
+            const pass = document.getElementById('adminPass').value;
+            try {
+                const configData = JSON.parse(document.getElementById('configEditor').value);
+                const res = await fetch('/api/save-config', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminPassword: pass, configData })
+                });
+                if(res.ok) alert("Desktop Updated Successfully!");
+                else alert("Failed or Wrong Password.");
+            } catch (e) {
+                alert("Invalid JSON format! Please check your code.");
+            }
+        }
         
-        if(!res.ok) {
-            document.getElementById('messagesArea').innerHTML = "";
-            return showModal("Error", "Wrong Password!");
-        }
-        
-        const messages = await res.json();
-        if(messages.length === 0) {
-            return document.getElementById('messagesArea').innerHTML = "<p style='text-align:center; color:#555;'>No messages yet.</p>";
-        }
-
-        let html = '';
-        messages.forEach(msg => {
-            const formattedTime = formatTimestamp(msg.name);
-            html += `<div class="msg-card">
-                        <button class="del-btn" onclick="deleteMessage('${msg.name}', '${msg.sha}')">Delete</button>
-                        <small style="color: #000080; font-weight: bold;">📅 ${formattedTime}</small>
-                        <p style="font-size:15px; margin: 8px 0 0 0; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; word-break: break-all;">${msg.content || "Error reading message"}</p>
-                     </div>`;
-        });
-        document.getElementById('messagesArea').innerHTML = html;
-    }
-
-    // (၂) Message ကို ဖျက်ခြင်း (Custom Confirm ဖြင့်)
-    async function deleteMessage(filename, sha) {
-        const confirmed = await showModal("Confirm Delete", "Are you sure you want to completely delete this message?", true);
-        if(!confirmed) return;
-
-        const adminPass = document.getElementById('adminPass').value;
-        
-        const res = await fetch('/api/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPassword: adminPass, filename: filename, sha: sha })
-        });
-
-        if(res.ok) {
-            await showModal("Success", "Message deleted successfully!");
-            fetchMessages(); 
-        } else {
-            await showModal("Error", "Failed to delete message.");
-        }
-    }
+        // Auto load config on start
+        loadConfig();
     </script>
 </body>
 </html>
