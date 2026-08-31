@@ -58,6 +58,24 @@
             #desktop { gap: 15px; }
         }
     </style>
+    <script>
+        try {
+            const cachedBg = localStorage.getItem('os_wallpaper');
+            if (cachedBg) {
+                let bgVal = cachedBg;
+                if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
+                    bgVal = `url('${bgVal}')`;
+                }
+                const style = document.createElement('style');
+                if (bgVal.startsWith('url')) {
+                    style.textContent = `body { background-image: ${bgVal} !important; background-size: cover !important; background-position: center !important; }`;
+                } else {
+                    style.textContent = `body { background: ${bgVal} !important; }`;
+                }
+                document.head.appendChild(style);
+            }
+        } catch(e) {}
+    </script>
 </head>
 <body>
 
