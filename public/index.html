@@ -128,9 +128,21 @@
             if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
             osConfig = data;
 
-            document.body.style.background = osConfig.wallpaper || '#008080';
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
+            let bgVal = osConfig.wallpaper || '#008080';
+            
+            // HTTP link (သို့) .jpg/.png ပါလာလျှင် url() ဖြင့် အလိုအလျောက် ပတ်ပေးရန်
+            if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
+                bgVal = `url('${bgVal}')`;
+            }
+
+            if (bgVal.startsWith('url')) {
+                document.body.style.backgroundImage = bgVal;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundRepeat = 'no-repeat';
+            } else {
+                document.body.style.background = bgVal;
+            }
 
             renderItems(osConfig.items, document.getElementById('desktop'), false);
         }
