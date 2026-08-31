@@ -247,15 +247,19 @@
                     <div style="background: #fff; border: inset 2px; padding: 20px; margin: 8px; min-height: 200px; box-sizing: border-box;">
                         <pre style="margin: 0; white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif; line-height: 1.5;">${item.content || ''}</pre>
                     </div>`;
+                
             } else if(item.type === 'app' && item.content === 'contact_form') {
                 contentArea.innerHTML = `
-                    <div style="background: #fff; border: inset 2px; padding: 15px; margin: 8px;">
+                    <div style="background: #fff; border: inset 2px; padding: 15px; margin: 8px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box;">
                         <div style="margin-bottom: 5px; font-weight: bold;">Name:</div>
                         <input type="text" id="sName_${winId}" placeholder="Optional">
+                        
                         <div style="margin-bottom: 5px; font-weight: bold;">Contact:</div>
                         <input type="text" id="sContact_${winId}" placeholder="Email or Phone">
+                        
                         <div style="margin-bottom: 5px; font-weight: bold;">Message:</div>
-                        <textarea id="sMsg_${winId}" rows="5"></textarea>
+                        <textarea id="sMsg_${winId}" rows="5" style="resize: vertical; flex: 1; min-height: 80px;"></textarea>
+                        
                         <button class="action-btn" id="sBtn_${winId}" onclick="sendMsg('${winId}')" style="margin-top: 10px;">Send Message</button>
                         <p id="sStatus_${winId}" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; margin-top:10px; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
                     </div>
