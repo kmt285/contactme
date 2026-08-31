@@ -23,7 +23,7 @@
 
         /* Taskbar Items */
         #taskbarItems { display: flex; gap: 4px; flex: 1; overflow-x: hidden; margin-left: 10px; }
-        .taskbar-item { padding: 3px 8px; border: outset 2px; background: var(--win-bg); cursor: pointer; white-space: nowrap; font-size: 13px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; margin-top:2px; margin-bottom:2px;}
+        .taskbar-item { padding: 3px 8px; border: outset 2px; background: var(--win-bg); cursor: pointer; white-space: nowrap; font-size: 13px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
         .taskbar-item.active { border: inset 2px; background: #dfdfdf; font-weight: bold; }
 
         #startMenu { display: none; position: absolute; bottom: 35px; left: 0; width: 200px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); z-index: 99999; box-shadow: 3px 3px 5px rgba(0,0,0,0.5); }
@@ -63,7 +63,6 @@
 
     <div id="desktop"></div>
 
-    <!-- Start Menu -->
     <div id="startMenu">
         <div class="start-item" onclick="customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info'); toggleStart();">ℹ️ System Info</div>
         <div class="start-item" onclick="window.location.reload();">🔄 Restart</div>
@@ -86,10 +85,8 @@
     </div>
 
     <script>
-        // Clock
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
-        // Alert
         function customAlert(message, title = "System Message") {
             document.getElementById('alertTitle').innerText = title;
             document.getElementById('alertMsg').innerHTML = `<span>💬</span> <div>${message}</div>`;
@@ -97,7 +94,6 @@
         }
         function closeAlert() { document.getElementById('customAlertOverlay').style.display = 'none'; }
 
-        // Start Menu
         function toggleStart() {
             const menu = document.getElementById('startMenu');
             const btn = document.getElementById('startBtn');
@@ -105,6 +101,7 @@
             menu.style.display = isBlock ? 'none' : 'block';
             isBlock ? btn.classList.remove('active') : btn.classList.add('active');
         }
+
         document.addEventListener('click', (e) => {
             if(!e.target.closest('#startMenu') && !e.target.closest('#startBtn')) {
                 document.getElementById('startMenu').style.display = 'none';
@@ -117,11 +114,14 @@
         let windowOffset = 0;   
 
         async function loadDesktop() {
-            const res = await fetch('/api/get-config');
-            let data = await res.json();
-            
-            if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
-            osConfig = data;
+            try {
+                const res = await fetch('/api/get-config');
+                let data = await res.json();
+                if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
+                osConfig = data;
+            } catch(e) {
+                console.error("Config Loading Error");
+            }
 
             let bgVal = osConfig.wallpaper || '#008080';
             if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
@@ -157,7 +157,6 @@
             });
         }
 
-        // Window သစ်တစ်ခု ဖန်တီးသော Function
         function openItem(item) {
             if(item.type === 'link') { window.open(item.url, '_blank'); return; }
 
@@ -166,7 +165,6 @@
             win.className = 'window';
             win.id = winId;
             
-            // Folder အတွက် History ကို Window အလိုက် သိမ်းထားမည်
             if(item.type === 'folder') win.folderHistory = [item];
 
             let offsetXY = (windowOffset % 10) * 20;
@@ -174,53 +172,41 @@
             win.style.left = (50 + offsetXY) + 'px';
             windowOffset++;
             
-            globalZIndex++;
-            win.style.zIndex = globalZIndex;
-
             win.onmousedown = () => focusWindow(winId);
             win.ontouchstart = () => focusWindow(winId);
-
-            let toolbarHtml = '';
-            if(item.type === 'folder') {
-                toolbarHtml = `
-                <div style="background: #e0e0e0; padding: 4px; display:none; border-bottom: inset 2px;" id="toolbar_${winId}">
-                    <button onclick="goBack('${winId}')" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">⬅️ Back</button>
-                </div>`;
-            }
 
             win.innerHTML = `
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
                     <button class="close-btn" onclick="closeWindow('${winId}')">X</button>
                 </div>
-                ${toolbarHtml}
+                <div style="background: #e0e0e0; padding: 4px; display:none; border-bottom: inset 2px;" id="toolbar_${winId}">
+                    <button onclick="goBack('${winId}')" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">⬅️ Back</button>
+                </div>
                 <div class="window-content" id="content_${winId}"></div>
             `;
 
             document.body.appendChild(win);
-            win.style.display = 'block';
 
-            // Taskbar တွင် ထည့်သွင်းခြင်း
             const tbItem = document.createElement('div');
-            tbItem.className = 'taskbar-item active';
+            tbItem.className = 'taskbar-item';
             tbItem.id = `tb_${winId}`;
-            tbItem.innerHTML = `<span style="font-size:12px;">${item.icon}</span> ${item.title}`;
+            tbItem.innerHTML = `<span style="font-size:12px;">${item.icon}</span> <span style="overflow:hidden; text-overflow:ellipsis;">${item.title}</span>`;
             tbItem.onclick = () => toggleWindow(winId);
             document.getElementById('taskbarItems').appendChild(tbItem);
 
             renderWindowContent(winId, item);
             dragElement(win, document.getElementById(`header_${winId}`));
-            updateTaskbarUI(winId);
+            focusWindow(winId);
         }
 
-        // Window အတွင်း Content များကို ပြသပေးသော Function (Folder ထဲဝင်လျှင် Window မပွားစေရန်)
         function renderWindowContent(winId, item) {
             const contentArea = document.getElementById(`content_${winId}`);
             const titleArea = document.getElementById(`title_${winId}`);
             const tbItem = document.getElementById(`tb_${winId}`);
             
             titleArea.innerHTML = `${item.icon} ${item.title}`;
-            if(tbItem) tbItem.innerHTML = `<span style="font-size:12px;">${item.icon}</span> ${item.title}`;
+            if(tbItem) tbItem.innerHTML = `<span style="font-size:12px;">${item.icon}</span> <span style="overflow:hidden; text-overflow:ellipsis;">${item.title}</span>`;
 
             if(item.type === 'text') {
                 contentArea.innerHTML = `
@@ -244,7 +230,6 @@
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
                 renderFolderItems(item.children || [], document.getElementById(`folderContainer_${winId}`), winId);
                 
-                // Back Button ဖော်ရန်/ဖျောက်ရန်
                 const winNode = document.getElementById(winId);
                 const toolbar = document.getElementById(`toolbar_${winId}`);
                 if(toolbar && winNode.folderHistory) {
@@ -253,7 +238,6 @@
             }
         }
 
-        // Folder အတွင်းရှိ ဖိုင်များကို ပြသခြင်း
         function renderFolderItems(itemsArray, container, winId) {
             container.innerHTML = ''; 
             (itemsArray || []).forEach(item => {
@@ -272,20 +256,16 @@
             });
         }
 
-        // Folder ထဲက File ကိုနှိပ်သောအခါ
         function handleFolderItemClick(item, winId) {
             if(item.type === 'folder') {
-                // Folder ဖြစ်ပါက လက်ရှိ Window ထဲမှာပဲ အစားထိုး ဝင်ရောက်မည်
                 const winNode = document.getElementById(winId);
                 winNode.folderHistory.push(item);
                 renderWindowContent(winId, item);
             } else {
-                // File သို့မဟုတ် App ဖြစ်ပါက Multi-tasking အနေဖြင့် Window အသစ်ဖွင့်မည်
                 openItem(item);
             }
         }
 
-        // Folder အတွင်း အနောက်သို့ ပြန်ဆုတ်ခြင်း
         function goBack(winId) {
             const winNode = document.getElementById(winId);
             if(winNode.folderHistory && winNode.folderHistory.length > 1) {
@@ -295,21 +275,93 @@
             }
         }
 
-        // Window ကို ပိတ်ခြင်း
+        function focusWindow(winId) {
+            const win = document.getElementById(winId);
+            if(win) {
+                win.style.display = 'block';
+                win.style.zIndex = ++globalZIndex;
+            }
+            document.querySelectorAll('.taskbar-item').forEach(tb => tb.classList.remove('active'));
+            const tbItem = document.getElementById(`tb_${winId}`);
+            if(tbItem) tbItem.classList.add('active');
+        }
+
+        function toggleWindow(winId) {
+            const win = document.getElementById(winId);
+            if(!win) return;
+            if(win.style.display === 'none') {
+                focusWindow(winId);
+            } else {
+                if (win.style.zIndex == globalZIndex) {
+                    win.style.display = 'none';
+                    const tbItem = document.getElementById(`tb_${winId}`);
+                    if(tbItem) tbItem.classList.remove('active');
+                } else {
+                    focusWindow(winId);
+                }
+            }
+        }
+
         function closeWindow(winId) { 
             const win = document.getElementById(winId);
-            if(winဖိုင်တစ်ခုဖွင့်တိုင်း အားလုံးပွင့်လာတာမျိုးက UI State Management မှာ Global Variable တစ်ခုတည်းကို အကုန်လုံးက မျှသုံးနေလို့ (သို့မဟုတ်) Event တွေ ရောထွေးသွားလို့ ဖြစ်နိုင်ပါတယ်။ ပုံမှန် Windows ကွန်ပျူတာတွေလို သပ်သပ်ရပ်ရပ်နဲ့ တစ်ခုချင်းစီ သီးခြားပွင့်ဖို့ အောက်ပါအချက်တွေကို ပြင်ဆင်ရေးသားဖို့ လိုအပ်ပါတယ်။
+            if(win) win.remove();
+            const tbItem = document.getElementById(`tb_${winId}`);
+            if(tbItem) tbItem.remove();
+        }
 
-**Window တစ်ခုချင်းစီအတွက် သီးခြား State ထားရှိခြင်း**
-ဖိုင် (သို့) Folder အားလုံးအတွက် `isOpen: true` ဆိုတဲ့ Variable တစ်ခုတည်းကို မသုံးဘဲ၊ Folder တစ်ခုချင်းစီအတွက် Unique ID တွေ သတ်မှတ်ပေးရပါမယ်။ ဥပမာ - `openedWindows: [{ id: 'folder1', isOpen: true }, { id: 'file2', isOpen: true }]` ပုံစံမျိုး List သို့မဟုတ် Array နဲ့ တစ်ခုချင်းစီရဲ့ အခြေအနေကို သီးခြားစီ ခွဲသိမ်းပါ။
+        async function sendMsg(winId) {
+            const btn = document.getElementById(`sBtn_${winId}`);
+            const msg = document.getElementById(`sMsg_${winId}`).value;
+            if(!msg.trim()) return customAlert("Please write a message before sending.", "Error");
+            
+            btn.innerText = "Sending..."; btn.disabled = true;
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: document.getElementById(`sName_${winId}`).value, 
+                        contact: document.getElementById(`sContact_${winId}`).value, 
+                        message: msg 
+                    })
+                });
+                if(res.ok) {
+                    document.getElementById(`sStatus_${winId}`).style.display = 'block';
+                    document.getElementById(`sMsg_${winId}`).value = '';
+                    setTimeout(() => {
+                        const statusEl = document.getElementById(`sStatus_${winId}`);
+                        if(statusEl) statusEl.style.display = 'none';
+                    }, 3000);
+                } else customAlert("Failed to send.", "Error");
+            } catch(e) { customAlert("Network error.", "Error"); }
+            if(btn) { btn.innerText = "Send Message"; btn.disabled = false; }
+        }
 
-**Z-Index (အရှေ့အနောက် အစီအစဉ်) ထိန်းချုပ်ခြင်း**
-Windows OS မှာ နောက်ဆုံးဖွင့်လိုက်တဲ့ (သို့) Click နှိပ်လိုက်တဲ့ Window က အမြဲတမ်း အရှေ့ဆုံးကို ရောက်လာပါတယ်။ ဒီလိုဖြစ်ဖို့ Active ဖြစ်နေတဲ့ Window ရဲ့ `z-index` (Stacking order) ကို အမြင့်ဆုံး တန်ဖိုးပေးပြီး၊ ကျန်တဲ့ Window တွေကို အနောက်မှာပဲ ဆက်ထားဖို့ Focus Logic ထည့်ရေးပါ။
+        function dragElement(elmnt, header) {
+            let p1=0, p2=0, p3=0, p4=0;
+            header.onmousedown = dragStart; header.ontouchstart = dragStart;
 
-**Event Propagation တားဆီးခြင်း**
-Icon တစ်ခုကို နှိပ်လိုက်တဲ့အခါ အဲ့ဒီ Click Event က အခြား နေရာတွေဆီ ကူးစက်သွားတာမျိုး (Event Bubbling) မဖြစ်အောင် `event.stopPropagation()` လိုမျိုး သုံးပြီး တားဆီးပေးပါ။ ဒါမှသာ နှိပ်လိုက်တဲ့ Folder တစ်ခုတည်းကပဲ တုံ့ပြန်မှာ ဖြစ်ပါတယ်။
+            function dragStart(e) {
+                if (window.innerWidth <= 500) return; 
+                focusWindow(elmnt.id);
+                if(e.type === "touchstart") { p3 = e.touches[0].clientX; p4 = e.touches[0].clientY; } 
+                else { p3 = e.clientX; p4 = e.clientY; e.preventDefault(); }
+                document.onmouseup = dragEnd; document.onmousemove = dragMove;
+                document.ontouchend = dragEnd; document.ontouchmove = dragMove;
+            }
+            function dragMove(e) {
+                if(e.type === "touchmove") {
+                    p1 = p3 - e.touches[0].clientX; p2 = p4 - e.touches[0].clientY;
+                    p3 = e.touches[0].clientX; p4 = e.touches[0].clientY;
+                } else {
+                    e.preventDefault();
+                    p1 = p3 - e.clientX; p2 = p4 - e.clientY; p3 = e.clientX; p4 = e.clientY;
+                }
+                elmnt.style.top = (elmnt.offsetTop - p2) + "px"; elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+            }
+            function dragEnd() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
+        }
 
-**Minimize / Maximize လုပ်ဆောင်ချက်များ ခွဲခြားခြင်း**
-ဖွင့်ထားတဲ့ Window တွေကို ဖျောက်ချင်ရင် (Minimize) လုံးဝ ဖျက်ပစ်တာမျိုး မလုပ်ဘဲ CSS Visibility (သို့မဟုတ်) State နဲ့ ခေတ္တဖျောက်ထားပြီး Taskbar ပေါ်မှာ မှတ်ထားပါ။ ပြန်နှိပ်မှ Active ပြန်ဖြစ်ပြီး အရှေ့ဆုံးကို ရောက်လာအောင် ပြင်ဆင်ပါ။
-
-ဒီအချက်တွေကို ပြင်ရေးလိုက်မယ်ဆိုရင် ဖိုင်တွေ အကုန်ပြိုင်တူပွင့်လာတဲ့ ပြဿနာ ကင်းသွားပြီး သပ်ရပ်တဲ့ Multi-tasking ကို ရရှိမှာပါ။ လက်ရှိ Project ကို ဘယ် Programming Language သို့မဟုတ် Framework (ဥပမာ - React, C#, Python) နဲ့ ရေးနေတာလဲဆိုတာ ပြောပြပေးနိုင်မလား။
+        loadDesktop();
+    </script>
+</body>
+</html>
