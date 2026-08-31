@@ -104,11 +104,16 @@
     </div>
 
     <div id="customAlertOverlay">
-        <div id="customAlert" class="window">
-            <div class="title-bar"><span id="alertTitle">Message</span><button class="close-btn" onclick="closeAlert()">X</button></div>
-            <div style="padding: 15px; background: var(--win-bg);">
-                <div id="alertMsg" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 14px; white-space: pre-wrap;"></div>
-                <div style="text-align: center;"><button class="action-btn" style="width: auto; padding: 4px 20px;" onclick="closeAlert()">OK</button></div>
+        <div id="customAlert" class="window" style="min-height: auto; height: auto; width: 300px;">
+            <div class="title-bar">
+                <span id="alertTitle">Message</span>
+                <button class="close-btn" onclick="closeAlert()">X</button>
+            </div>
+            <div style="padding: 20px; background: var(--win-bg); display: block;">
+                <div id="alertMsg" style="margin-bottom: 25px; display: flex; justify-content: center; align-items: center; text-align: center; font-size: 14px; white-space: pre-wrap; line-height: 1.5;"></div>
+                <div style="text-align: center;">
+                    <button class="action-btn" style="width: auto; min-width: 80px; padding: 4px 20px; margin: 0;" onclick="closeAlert()">OK</button>
+                </div>
             </div>
         </div>
     </div>
