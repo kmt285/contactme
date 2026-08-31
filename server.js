@@ -37,10 +37,19 @@ app.get('/api/get-config', async (req, res) => {
     if (file) {
         res.status(200).json(JSON.parse(file.content));
     } else {
-        res.status(200).json([
-            { id: "contact", title: "Secure Contact.exe", type: "app", icon: "📧", content: "contact_form" },
-            { id: "about", title: "About Me.txt", type: "text", icon: "📄", content: "Hello! I am a developer. Welcome to my retro OS portfolio!" }
-        ]);
+        // သတ်မှတ်ထားတာ မရှိသေးရင် ပေါ်မယ့် Default ပုံစံသစ်
+        res.status(200).json({
+            wallpaper: "#008080", // အရောင် (သို့) ပုံထည့်ရန် e.g., "url('image.jpg')"
+            systemInfo: "OS Version: 1.0\nDeveloper: Your Name\nStatus: Running Smoothly",
+            items: [
+                { id: "contact", title: "Secure Contact.exe", type: "app", icon: "📧", content: "contact_form" },
+                { id: "about", title: "About Me.txt", type: "text", icon: "📄", content: "Hello! Welcome to my portfolio!" },
+                { id: "myfolder", title: "My Projects", type: "folder", icon: "📁", children: [
+                    { id: "proj1", title: "Project 1.txt", type: "text", icon: "📄", content: "This is a file inside a folder!" },
+                    { id: "link1", title: "My GitHub", type: "link", icon: "🔗", url: "https://github.com" }
+                ]}
+            ]
+        });
     }
 });
 
