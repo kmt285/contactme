@@ -10,7 +10,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Frontend ဖိုင်များကို public folder ထဲထည့်ပါ
+app.use(express.static(path.join(__dirname, 'public')));
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const OWNER = process.env.GITHUB_OWNER;
@@ -23,7 +23,6 @@ const sendLimiter = rateLimit({
     message: { success: false, error: "Too many requests. Please try again later." },
 });
 
-// Helper Function: GitHub ဖိုင်များကို ရယူရန်
 async function getGithubFile(filePath) {
     try {
         const { data } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: filePath });
@@ -33,15 +32,11 @@ async function getGithubFile(filePath) {
     }
 }
 
-// ---------------------------------------------------
-// 1. Desktop Configuration APIs
-// ---------------------------------------------------
 app.get('/api/get-config', async (req, res) => {
     const file = await getGithubFile('config/desktop.json');
     if (file) {
         res.status(200).json(JSON.parse(file.content));
     } else {
-        // Default Config (စစချင်း မရှိသေးရင် ပေးမယ့် ပုံစံ)
         res.status(200).json([
             { id: "contact", title: "Secure Contact.exe", type: "app", icon: "📧", content: "contact_form" },
             { id: "about", title: "About Me.txt", type: "text", icon: "📄", content: "Hello! I am a developer. Welcome to my retro OS portfolio!" }
@@ -68,9 +63,6 @@ app.post('/api/save-config', async (req, res) => {
     }
 });
 
-// ---------------------------------------------------
-// 2. Messaging APIs (ယခင်အတိုင်း)
-// ---------------------------------------------------
 app.post('/api/send', sendLimiter, async (req, res) => {
     try {
         const { name, contact, message } = req.body;
@@ -129,3 +121,6 @@ app.post('/api/delete', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
+// Vercel Serverless Function အတွက် Export လုပ်ပေးခြင်း
+module.exports = app;
