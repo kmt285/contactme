@@ -137,6 +137,9 @@
                 let data = await res.json();
                 if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
                 osConfig = data;
+                
+                localStorage.setItem('os_wallpaper', osConfig.wallpaper || '#008080');
+
             } catch(e) {
                 console.error("Config Loading Error");
             }
