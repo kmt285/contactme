@@ -165,7 +165,8 @@
             win.className = 'window';
             win.id = winId;
             
-            // ပြင်ဆင်ချက်: win.folderHistory = [item]; ဆိုတဲ့လိုင်းကို ဖယ်ရှားလိုက်ပါပြီ
+            // Folder ဆိုရင် History မှတ်မယ်
+            if(item.type === 'folder') win.folderHistory = [item];
 
             let offsetXY = (windowOffset % 10) * 20;
             win.style.top = (50 + offsetXY) + 'px';
@@ -175,11 +176,13 @@
             win.onmousedown = () => focusWindow(winId);
             win.ontouchstart = () => focusWindow(winId);
 
-            // ပြင်ဆင်ချက်: toolbar_ winId ပါတဲ့ Back button HTML ကို ဖယ်ရှားလိုက်ပါပြီ
+            // Breadcrumb Address Bar ပြရန် Toolbar (အဖြူရောင်နောက်ခံ) ထည့်သွင်းခြင်း
             win.innerHTML = `
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
                     <button class="close-btn" onclick="closeWindow('${winId}')">X</button>
+                </div>
+                <div style="background: #fff; padding: 5px 8px; display:none; border-bottom: inset 2px; font-size:13px; font-family: sans-serif;" id="toolbar_${winId}">
                 </div>
                 <div class="window-content" id="content_${winId}"></div>
             `;
@@ -224,9 +227,44 @@
                         <p id="sStatus_${winId}" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; margin-top:10px; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
                     </div>
                 `;
+                
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
                 renderFolderItems(item.children || [], document.getElementById(`folderContainer_${winId}`), winId);
+                
+                const winNode = document.getElementById(winId);
+                const toolbar = document.getElementById(`toolbar_${winId}`);
+                if(toolbar && winNode.folderHistory) {
+                    toolbar.style.display = 'block';
+                    
+                    // Breadcrumb Path (အဆင့်ဆင့်) တည်ဆောက်ခြင်း
+                    let pathHtml = '';
+                    winNode.folderHistory.forEach((histItem, idx) => {
+                        if (idx > 0) pathHtml += ' <span style="color:#888; font-size:11px; margin: 0 4px;">▶</span> ';
+                        
+                        if (idx === winNode.folderHistory.length - 1) {
+                            // လက်ရှိရောက်နေတဲ့ Folder (နှိပ်လို့မရ)
+                            pathHtml += `<span style="font-weight:bold; color:black;">${histItem.title}</span>`;
+                        } else {
+                            // အနောက်ပြန်ဆုတ်ချင်တဲ့ Folder (နှိပ်လို့ရ)
+                            pathHtml += `<span style="cursor:pointer; color:var(--win-title);" 
+                                onmouseover="this.style.textDecoration='underline'" 
+                                onmouseout="this.style.textDecoration='none'" 
+                                onclick="jumpToHistory('${winId}', ${idx})">${histItem.title}</span>`;
+                        }
+                    });
+                    toolbar.innerHTML = pathHtml;
+                }
+            }
+        }
+
+        function jumpToHistory(winId, index) {
+            const winNode = document.getElementById(winId);
+            if (winNode && winNode.folderHistory) {
+                // ရွေးချယ်လိုက်တဲ့ အဆင့်အထိပဲ History ကို ဖြတ်ယူမယ်
+                winNode.folderHistory = winNode.folderHistory.slice(0, index + 1);
+                const targetItem = winNode.folderHistory[index];
+                renderWindowContent(winId, targetItem);
             }
         }
         
@@ -250,7 +288,15 @@
         }
 
         function handleFolderItemClick(item, winId) {
-            openItem(item);
+            if(item.type === 'folder') {
+                // Folder ဆိုရင် လက်ရှိ Window ထဲမှာပဲ Navigation လုပ်မယ်
+                const winNode = document.getElementById(winId);
+                winNode.folderHistory.push(item);
+                renderWindowContent(winId, item);
+            } else {
+                // File/App ဆိုရင် Window အသစ် ခွဲဖွင့်မယ်
+                openItem(item);
+            }
         }
 
         function focusWindow(winId) {
