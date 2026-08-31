@@ -165,7 +165,7 @@
             win.className = 'window';
             win.id = winId;
             
-            if(item.type === 'folder') win.folderHistory = [item];
+            // ပြင်ဆင်ချက်: win.folderHistory = [item]; ဆိုတဲ့လိုင်းကို ဖယ်ရှားလိုက်ပါပြီ
 
             let offsetXY = (windowOffset % 10) * 20;
             win.style.top = (50 + offsetXY) + 'px';
@@ -175,13 +175,11 @@
             win.onmousedown = () => focusWindow(winId);
             win.ontouchstart = () => focusWindow(winId);
 
+            // ပြင်ဆင်ချက်: toolbar_ winId ပါတဲ့ Back button HTML ကို ဖယ်ရှားလိုက်ပါပြီ
             win.innerHTML = `
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
                     <button class="close-btn" onclick="closeWindow('${winId}')">X</button>
-                </div>
-                <div style="background: #e0e0e0; padding: 4px; display:none; border-bottom: inset 2px;" id="toolbar_${winId}">
-                    <button onclick="goBack('${winId}')" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">Back</button>
                 </div>
                 <div class="window-content" id="content_${winId}"></div>
             `;
@@ -229,14 +227,9 @@
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
                 renderFolderItems(item.children || [], document.getElementById(`folderContainer_${winId}`), winId);
-                
-                const winNode = document.getElementById(winId);
-                const toolbar = document.getElementById(`toolbar_${winId}`);
-                if(toolbar && winNode.folderHistory) {
-                    toolbar.style.display = winNode.folderHistory.length > 1 ? 'block' : 'none';
-                }
             }
         }
+        
 
         function renderFolderItems(itemsArray, container, winId) {
             container.innerHTML = ''; 
@@ -257,22 +250,7 @@
         }
 
         function handleFolderItemClick(item, winId) {
-            if(item.type === 'folder') {
-                const winNode = document.getElementById(winId);
-                winNode.folderHistory.push(item);
-                renderWindowContent(winId, item);
-            } else {
-                openItem(item);
-            }
-        }
-
-        function goBack(winId) {
-            const winNode = document.getElementById(winId);
-            if(winNode.folderHistory && winNode.folderHistory.length > 1) {
-                winNode.folderHistory.pop(); 
-                const prevItem = winNode.folderHistory[winNode.folderHistory.length - 1];
-                renderWindowContent(winId, prevItem);
-            }
+            openItem(item);
         }
 
         function focusWindow(winId) {
