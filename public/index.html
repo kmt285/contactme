@@ -21,10 +21,12 @@
         .start-btn:active, .start-btn.active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
         .clock { margin-left: auto; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); padding: 4px 10px; font-size: 13px; }
 
-        /* Start Menu */
-        #startMenu { display: none; position: absolute; bottom: 35px; left: 0; width: 200px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); z-index: 9999; box-shadow: 3px 3px 5px rgba(0,0,0,0.5); }
-        .start-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
-        .start-item:hover { background: var(--win-title); color: white; }
+        <!-- Start Menu -->
+        <div id="startMenu">
+            <!-- ဤနေရာတွင် osConfig.systemInfo ကို သုံးထားသည် -->
+            <div class="start-item" onclick="customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info'); toggleStart();">System Info</div>
+            <div class="start-item" onclick="window.location.reload();">Restart</div>
+        </div>
 
         /* Draggable Window */
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 400px; display: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100; }
@@ -125,13 +127,31 @@
             }
         });
 
+        // index.html ရဲ့ <script> ထဲက loadDesktop နဲ့ openItem နေရာမှာ အစားထိုးရန်
+
+        let osConfig = {}; // Config အားလုံးကို သိမ်းထားမည့် Variable
+
         // Fetch Desktop Config
         async function loadDesktop() {
             const res = await fetch('/api/get-config');
-            const items = await res.json();
-            const desktop = document.getElementById('desktop');
+            let data = await res.json();
             
-            items.forEach(item => {
+            // အဟောင်း (Array) ပုံစံဖြစ်နေရင် အသစ်ပုံစံပြောင်းပေးရန်
+            if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "Retro OS System Info", items: data }; }
+            osConfig = data;
+
+            // Wallpaper ပြောင်းရန်
+            document.body.style.background = osConfig.wallpaper || '#008080';
+            document.body.style.backgroundSize = 'cover';
+
+            const desktop = document.getElementById('desktop');
+            renderItems(osConfig.items, desktop); // Desktop ပေါ်မှာ ပုံဖော်ရန်
+        }
+
+        // Icon လေးတွေ ပုံဖော်ပေးတဲ့ Function သီးသန့်ခွဲထုတ်လိုက်သည် (Folder တွေအတွက်ပါ သုံးလို့ရအောင်)
+        function renderItems(itemsArray, container) {
+            container.innerHTML = ''; // အရင်ရှင်းထုတ်မည်
+            itemsArray.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'desktop-icon';
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
@@ -147,7 +167,7 @@
                     lastTap = currentTime;
                 });
                 
-                desktop.appendChild(div);
+                container.appendChild(div);
             });
         }
 
@@ -169,7 +189,12 @@
                     <button class="action-btn" id="sBtn" onclick="sendMsg()">Send Message</button>
                     <p id="sStatus" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
                 `;
+            } else if(item.type === 'folder') {
+                // Folder အမျိုးအစားဆိုလျှင် အတွင်းထဲက children တွေကို ထပ်ဆွဲထုတ်ပြမည်
+                contentArea.innerHTML = `<div id="folder-${item.id}" style="display: flex; gap: 25px; flex-wrap: wrap; align-items: flex-start;"></div>`;
+                renderItems(item.children || [], document.getElementById(`folder-${item.id}`));
             }
+            
             // Bring to front
             win.style.display = 'block';
             win.style.zIndex = 1000;
