@@ -30,7 +30,7 @@
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; }
         .close-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-weight: bold; padding: 1px 6px; cursor: pointer; font-size: 12px;}
         .close-btn:active { border: inset 2px; }
-        .window-content { padding: 15px; font-size: 14px; background: #fff; margin: 5px; border: inset 2px; min-height: 200px; max-height: 60vh; overflow-y: auto;}
+        .window-content { padding: 0; font-size: 14px; background: var(--win-bg); min-height: 200px; max-height: 60vh; overflow-y: auto;}
         
         /* Inside Folder Icons */
         .folder-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
@@ -156,36 +156,51 @@
             });
         }
 
-        function openItem(item, isBack = false) {
-            const win = document.getElementById('appWindow');
-            const contentArea = document.getElementById('winContent');
-            const toolbar = document.getElementById('winToolbar');
+function openItem(item, isBack = false) {
+    const win = document.getElementById('appWindow');
+    const contentArea = document.getElementById('winContent');
+    const toolbar = document.getElementById('winToolbar');
 
-            if(!isBack && item.type === 'folder') { folderHistory.push(item); }
-            toolbar.style.display = folderHistory.length > 0 ? 'block' : 'none';
-            document.getElementById('winTitle').innerText = item.title;
+    if(!isBack && item.type === 'folder') { folderHistory.push(item); }
 
-            if(item.type === 'link') {
-                window.open(item.url, '_blank');
-                if(!isBack) folderHistory.pop(); // Remove if link opened externally
-                return;
-            } else if(item.type === 'text') {
-                contentArea.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif;">${item.content || ''}</pre>`;
-            } else if(item.type === 'app' && item.content === 'contact_form') {
-                contentArea.innerHTML = `
-                    <div style="margin-bottom: 5px;"><b>Name:</b></div><input type="text" id="sName" placeholder="Optional">
-                    <div style="margin-bottom: 5px;"><b>Contact:</b></div><input type="text" id="sContact" placeholder="Email or Phone">
-                    <div style="margin-bottom: 5px;"><b>Message:</b></div><textarea id="sMsg" rows="5"></textarea>
-                    <button class="action-btn" id="sBtn" onclick="sendMsg()">Send Message</button>
-                    <p id="sStatus" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
-                `;
-            } else if(item.type === 'folder') {
-                renderItems(item.children || [], contentArea, true);
-            }
-            
-            win.style.display = 'block';
-            win.style.zIndex = 1000;
-        }
+    // ဖိုင် (သို့) App ဖွင့်ထားချိန်တွင် Back ခလုတ်ကို ဖျောက်ထားပြီး Folder တွင်သာ ပြရန်
+    toolbar.style.display = (item.type === 'folder' && folderHistory.length > 0) ? 'block' : 'none';
+
+    document.getElementById('winTitle').innerText = item.title;
+
+    if(item.type === 'link') {
+        window.open(item.url, '_blank');
+        if(!isBack) folderHistory.pop(); 
+        return;
+    } else if(item.type === 'text') {
+        // Text File အတွက် Padding နှင့် Inset Border ထည့်သွင်းခြင်း
+        contentArea.innerHTML = `
+            <div style="background: #fff; border: inset 2px; padding: 20px; margin: 8px; min-height: 200px; box-sizing: border-box;">
+                <pre style="margin: 0; white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif; line-height: 1.5;">${item.content || ''}</pre>
+            </div>`;
+    } else if(item.type === 'app' && item.content === 'contact_form') {
+        // ဒုတိယပုံမှ UI အမှန်အတိုင်း သပ်ရပ်သော Box Style ထည့်သွင်းခြင်း
+        contentArea.innerHTML = `
+            <div style="background: #fff; border: inset 2px; padding: 15px; margin: 8px;">
+                <div style="margin-bottom: 5px; font-weight: bold;">Name:</div>
+                <input type="text" id="sName" placeholder="Optional">
+                <div style="margin-bottom: 5px; font-weight: bold;">Contact:</div>
+                <input type="text" id="sContact" placeholder="Email or Phone">
+                <div style="margin-bottom: 5px; font-weight: bold;">Message:</div>
+                <textarea id="sMsg" rows="5"></textarea>
+                <button class="action-btn" id="sBtn" onclick="sendMsg()" style="margin-top: 10px;">Send Message</button>
+                <p id="sStatus" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; margin-top:10px; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
+            </div>
+        `;
+    } else if(item.type === 'folder') {
+        // Folder အတွက် သပ်ရပ်သော Padding ထည့်ခြင်း
+        contentArea.innerHTML = `<div id="folderContainer" class="folder-grid" style="padding: 15px;"></div>`;
+        renderItems(item.children || [], document.getElementById('folderContainer'), true);
+    }
+
+    win.style.display = 'block';
+    win.style.zIndex = 1000;
+}
 
         function goBack() {
             folderHistory.pop();
