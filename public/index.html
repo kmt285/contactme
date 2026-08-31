@@ -2,55 +2,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro OS Portfolio</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #008080; font-family: 'MS Sans Serif', Tahoma, sans-serif; overflow: hidden; user-select: none; }
+        :root { --os-bg: #008080; --win-bg: #c0c0c0; --win-border-light: #fff; --win-border-dark: #000; --win-title: #000080; }
+        body { margin: 0; padding: 0; background-color: var(--os-bg); font-family: 'MS Sans Serif', Tahoma, sans-serif; overflow: hidden; user-select: none; }
         
         /* Desktop Icons */
-        #desktop { padding: 20px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start; height: calc(100vh - 40px); }
-        .desktop-icon { width: 80px; text-align: center; cursor: pointer; color: white; }
-        .desktop-icon:active .icon-title { background: #000080; border: 1px dotted white; }
-        .icon-img { font-size: 40px; display: block; margin-bottom: 5px; text-shadow: 1px 1px 2px black;}
-        .icon-title { font-size: 13px; padding: 2px; }
+        #desktop { padding: 20px; display: flex; flex-direction: column; flex-wrap: wrap; gap: 25px; align-content: flex-start; height: calc(100vh - 50px); }
+        .desktop-icon { width: 80px; text-align: center; cursor: pointer; color: white; display: flex; flex-direction: column; align-items: center;}
+        .desktop-icon:active .icon-title { background: var(--win-title); border: 1px dotted white; }
+        .icon-img { font-size: 45px; display: block; margin-bottom: 5px; text-shadow: 2px 2px 3px rgba(0,0,0,0.7); }
+        .icon-title { font-size: 13px; padding: 2px 4px; display: inline-block; word-break: break-word;}
 
         /* Taskbar */
-        #taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 35px; background: #c0c0c0; border-top: 2px solid #fff; display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 10000; }
-        .start-btn { font-weight: bold; padding: 4px 10px; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; background: #c0c0c0; cursor: pointer; display: flex; align-items: center; gap: 5px;}
-        .start-btn:active { border-top: 2px solid #000; border-left: 2px solid #000; border-right: 2px solid #fff; border-bottom: 2px solid #fff; }
-        .clock { margin-left: auto; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #fff; border-bottom: 2px solid #fff; padding: 4px 10px; font-size: 13px; }
+        #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 10000; }
+        .start-btn { font-weight: bold; padding: 4px 10px; border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); background: var(--win-bg); cursor: pointer; display: flex; align-items: center; gap: 5px;}
+        .start-btn:active, .start-btn.active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
+        .clock { margin-left: auto; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); padding: 4px 10px; font-size: 13px; }
+
+        /* Start Menu */
+        #startMenu { display: none; position: absolute; bottom: 35px; left: 0; width: 200px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); z-index: 9999; box-shadow: 3px 3px 5px rgba(0,0,0,0.5); }
+        .start-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+        .start-item:hover { background: var(--win-title); color: white; }
 
         /* Draggable Window */
-        .window { position: absolute; background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; min-width: 300px; display: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100; }
-        .title-bar { background: #000080; color: #fff; padding: 3px 5px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; }
-        .close-btn { background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; padding: 0 5px; cursor: pointer; }
+        .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 400px; display: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100; }
+        .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; }
+        .close-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-weight: bold; padding: 1px 6px; cursor: pointer; font-size: 12px;}
         .close-btn:active { border: inset 2px; }
-        .window-content { padding: 15px; font-size: 14px; background: #fff; margin: 5px; border: inset 2px; min-height: 100px;}
+        .window-content { padding: 15px; font-size: 14px; background: #fff; margin: 5px; border: inset 2px; min-height: 100px; overflow-y: auto;}
         
-        /* Contact Form Styles inside Window */
+        /* Forms */
         input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
-        button.action-btn { background: #c0c0c0; border: outset 2px; padding: 6px 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px;}
+        button.action-btn { background: var(--win-bg); border: outset 2px; padding: 6px 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px;}
         button.action-btn:active { border: inset 2px; }
+
+        /* Custom Alert Modal */
+        #customAlertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 100000; }
+        #customAlert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; display: block; }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 500px) {
+            .window { width: 90% !important; left: 5% !important; top: 10% !important; transform: none !important; }
+            #customAlert { width: 85% !important; }
+            #desktop { gap: 15px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Desktop Area (Icons will be injected here) -->
     <div id="desktop"></div>
 
-    <!-- Generic Window Template -->
-    <div id="appWindow" class="window" style="top: 100px; left: 100px;">
+    <div id="appWindow" class="window" style="top: 10vh; left: 10vw;">
         <div class="title-bar" id="appWindowHeader">
             <span id="winTitle">Window</span>
             <button class="close-btn" onclick="closeWindow()">X</button>
         </div>
-        <div class="window-content" id="winContent"></div>
+        <div class="window-content" id="winContent" style="max-height: 60vh;"></div>
     </div>
 
-    <!-- Taskbar -->
+    <div id="startMenu">
+        <div class="start-item" onclick="customAlert('System is running smoothly.', 'System Info'); toggleStart();">ℹ️ System Info</div>
+        <div class="start-item" onclick="window.location.reload();">🔄 Restart</div>
+    </div>
+
     <div id="taskbar">
-        <div class="start-btn" onclick="alert('Start Menu coming soon!')">🪟 Start</div>
+        <div class="start-btn" id="startBtn" onclick="toggleStart()">🪟 Start</div>
         <div class="clock" id="clock">12:00 PM</div>
+    </div>
+
+    <div id="customAlertOverlay">
+        <div id="customAlert" class="window">
+            <div class="title-bar">
+                <span id="alertTitle">Message</span>
+                <button class="close-btn" onclick="closeAlert()">X</button>
+            </div>
+            <div style="padding: 15px; background: var(--win-bg);">
+                <div id="alertMsg" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 14px;"></div>
+                <div style="text-align: center;">
+                    <button class="action-btn" style="width: auto; padding: 4px 20px;" onclick="closeAlert()">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -60,7 +94,34 @@
             document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }, 1000);
 
-        // Fetch Desktop Config from GitHub
+        // Custom Alert Logic (Replaces default alert)
+        function customAlert(message, title = "System Message") {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMsg').innerHTML = `<span>💬</span> <div>${message}</div>`;
+            document.getElementById('customAlertOverlay').style.display = 'block';
+        }
+        function closeAlert() { document.getElementById('customAlertOverlay').style.display = 'none'; }
+
+        // Start Menu Logic
+        function toggleStart() {
+            const menu = document.getElementById('startMenu');
+            const btn = document.getElementById('startBtn');
+            if(menu.style.display === 'block') {
+                menu.style.display = 'none';
+                btn.classList.remove('active');
+            } else {
+                menu.style.display = 'block';
+                btn.classList.add('active');
+            }
+        }
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#startMenu') && !e.target.closest('#startBtn')) {
+                document.getElementById('startMenu').style.display = 'none';
+                document.getElementById('startBtn').classList.remove('active');
+            }
+        });
+
+        // Fetch Desktop Config
         async function loadDesktop() {
             const res = await fetch('/api/get-config');
             const items = await res.json();
@@ -72,7 +133,8 @@
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
                 div.ondblclick = () => openItem(item);
-                // Touch support for mobile
+                
+                // Touch handling
                 let lastTap = 0;
                 div.addEventListener('touchend', (e) => {
                     const currentTime = new Date().getTime();
@@ -85,7 +147,6 @@
             });
         }
 
-        // Open App or File
         function openItem(item) {
             const win = document.getElementById('appWindow');
             document.getElementById('winTitle').innerText = item.title;
@@ -98,23 +159,27 @@
                 contentArea.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif;">${item.content}</pre>`;
             } else if(item.type === 'app' && item.content === 'contact_form') {
                 contentArea.innerHTML = `
-                    <b>Name:</b><input type="text" id="sName" placeholder="Optional">
-                    <b>Contact:</b><input type="text" id="sContact" placeholder="Email/Phone">
-                    <b>Message:</b><textarea id="sMsg" rows="5"></textarea>
+                    <div style="margin-bottom: 5px;"><b>Name:</b></div><input type="text" id="sName" placeholder="Optional">
+                    <div style="margin-bottom: 5px;"><b>Contact:</b></div><input type="text" id="sContact" placeholder="Email or Phone">
+                    <div style="margin-bottom: 5px;"><b>Message:</b></div><textarea id="sMsg" rows="5"></textarea>
                     <button class="action-btn" id="sBtn" onclick="sendMsg()">Send Message</button>
-                    <p id="sStatus" style="color: green; font-weight:bold; display:none; text-align:center; margin-bottom:0;">Sent Successfully!</p>
+                    <p id="sStatus" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
                 `;
             }
+            // Bring to front
             win.style.display = 'block';
+            win.style.zIndex = 1000;
         }
 
         function closeWindow() { document.getElementById('appWindow').style.display = 'none'; }
 
-        // Send Message Function
         async function sendMsg() {
             const btn = document.getElementById('sBtn');
             const msg = document.getElementById('sMsg').value;
-            if(!msg.trim()) return alert("Write a message first!");
+            if(!msg.trim()) {
+                customAlert("Please write a message before sending.", "Error");
+                return;
+            }
             
             btn.innerText = "Sending..."; btn.disabled = true;
             try {
@@ -130,30 +195,49 @@
                     document.getElementById('sStatus').style.display = 'block';
                     document.getElementById('sMsg').value = '';
                     setTimeout(() => document.getElementById('sStatus').style.display = 'none', 3000);
+                } else {
+                    customAlert("Failed to send message. Please try again.", "Server Error");
                 }
-            } catch(e) { alert("Failed to send."); }
+            } catch(e) { customAlert("Network error.", "Error"); }
             btn.innerText = "Send Message"; btn.disabled = false;
         }
 
-        // Draggable Window Logic
+        // Optimized Draggable Window Logic (Supports mouse & touch)
         dragElement(document.getElementById("appWindow"));
         function dragElement(elmnt) {
-            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            document.getElementById("appWindowHeader").onmousedown = dragMouseDown;
-            function dragMouseDown(e) {
-                e = e || window.event; e.preventDefault();
-                pos3 = e.clientX; pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = document.getElementById("appWindowHeader");
+            header.onmousedown = dragStart;
+            header.ontouchstart = dragStart;
+
+            function dragStart(e) {
+                e = e || window.event;
+                // Prevent drag if window is full width on mobile
+                if (window.innerWidth <= 500) return; 
+                
+                if(e.type === "touchstart") { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
+                else { pos3 = e.clientX; pos4 = e.clientY; e.preventDefault(); }
+                
+                document.onmouseup = dragEnd; document.onmousemove = dragMove;
+                document.ontouchend = dragEnd; document.ontouchmove = dragMove;
             }
-            function elementDrag(e) {
-                e = e || window.event; e.preventDefault();
-                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-                pos3 = e.clientX; pos4 = e.clientY;
+            function dragMove(e) {
+                e = e || window.event;
+                if(e.type === "touchmove") {
+                    pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY;
+                    pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+                } else {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX; pos4 = e.clientY;
+                }
                 elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
             }
-            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
+            function dragEnd() {
+                document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
+            }
         }
 
         loadDesktop();
