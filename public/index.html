@@ -12,28 +12,31 @@
         #desktop { padding: 20px; display: flex; flex-direction: column; flex-wrap: wrap; gap: 25px; align-content: flex-start; height: calc(100vh - 50px); }
         .desktop-icon { width: 80px; text-align: center; cursor: pointer; color: white; display: flex; flex-direction: column; align-items: center;}
         .desktop-icon:active .icon-title { background: var(--win-title); border: 1px dotted white; }
-        .icon-img { font-size: 45px; display: block; margin-bottom: 5px; text-shadow: 2px 2px 3px rgba(0,0,0,0.7); }
+        .icon-img { font-size: 40px; display: block; margin-bottom: 5px; text-shadow: 2px 2px 3px rgba(0,0,0,0.7); }
         .icon-title { font-size: 13px; padding: 2px 4px; display: inline-block; word-break: break-word;}
 
-        /* Taskbar */
+        /* Taskbar & Start Menu */
         #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 10000; }
         .start-btn { font-weight: bold; padding: 4px 10px; border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); background: var(--win-bg); cursor: pointer; display: flex; align-items: center; gap: 5px;}
         .start-btn:active, .start-btn.active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
         .clock { margin-left: auto; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); padding: 4px 10px; font-size: 13px; }
 
-        <!-- Start Menu -->
-        <div id="startMenu">
-            <!-- ဤနေရာတွင် osConfig.systemInfo ကို သုံးထားသည် -->
-            <div class="start-item" onclick="customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info'); toggleStart();">System Info</div>
-            <div class="start-item" onclick="window.location.reload();">Restart</div>
-        </div>
+        #startMenu { display: none; position: absolute; bottom: 35px; left: 0; width: 200px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); z-index: 9999; box-shadow: 3px 3px 5px rgba(0,0,0,0.5); }
+        .start-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: black; }
+        .start-item:hover { background: var(--win-title); color: white; }
 
         /* Draggable Window */
-        .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 400px; display: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100; }
+        .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; display: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; }
         .close-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-weight: bold; padding: 1px 6px; cursor: pointer; font-size: 12px;}
         .close-btn:active { border: inset 2px; }
-        .window-content { padding: 15px; font-size: 14px; background: #fff; margin: 5px; border: inset 2px; min-height: 100px; overflow-y: auto;}
+        .window-content { padding: 15px; font-size: 14px; background: #fff; margin: 5px; border: inset 2px; min-height: 200px; max-height: 60vh; overflow-y: auto;}
+        
+        /* Inside Folder Icons */
+        .folder-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        .folder-grid .desktop-icon { color: black; width: 70px; }
+        .folder-grid .desktop-icon .icon-img { text-shadow: none; font-size: 35px;}
+        .folder-grid .desktop-icon:active .icon-title { background: var(--win-title); color: white; border: 1px dotted black; }
         
         /* Forms */
         input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
@@ -44,16 +47,11 @@
         #customAlertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 100000; }
         #customAlert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; display: block; }
         
-        /* Mobile Responsiveness */
         @media (max-width: 500px) {
             .window { width: 90% !important; left: 5% !important; top: 10% !important; transform: none !important; }
             #customAlert { width: 85% !important; }
             #desktop { gap: 15px; }
         }
-
-        /* Folder ထဲက icon တွေအတွက် (CSS အဆုံးနားလောက်မှာ ထည့်ပါ) */
-        #winContent .desktop-icon { color: black; width: 70px; }
-        #winContent .desktop-icon:active .icon-title { color: white; }
     </style>
 </head>
 <body>
@@ -65,11 +63,15 @@
             <span id="winTitle">Window</span>
             <button class="close-btn" onclick="closeWindow()">X</button>
         </div>
-        <div class="window-content" id="winContent" style="max-height: 60vh;"></div>
+        <div style="background: #e0e0e0; padding: 4px; display:none; border-bottom: inset 2px;" id="winToolbar">
+            <button onclick="goBack()" style="background: var(--win-bg); border: outset 2px; font-size: 12px; cursor: pointer;">⬅️ Back</button>
+        </div>
+        <div class="window-content" id="winContent"></div>
     </div>
 
+    <!-- Start Menu - Fixed and inside Body -->
     <div id="startMenu">
-        <div class="start-item" onclick="customAlert('System is running smoothly.', 'System Info'); toggleStart();">ℹ️ System Info</div>
+        <div class="start-item" onclick="customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info'); toggleStart();">ℹ️ System Info</div>
         <div class="start-item" onclick="window.location.reload();">🔄 Restart</div>
     </div>
 
@@ -80,27 +82,19 @@
 
     <div id="customAlertOverlay">
         <div id="customAlert" class="window">
-            <div class="title-bar">
-                <span id="alertTitle">Message</span>
-                <button class="close-btn" onclick="closeAlert()">X</button>
-            </div>
+            <div class="title-bar"><span id="alertTitle">Message</span><button class="close-btn" onclick="closeAlert()">X</button></div>
             <div style="padding: 15px; background: var(--win-bg);">
-                <div id="alertMsg" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 14px;"></div>
-                <div style="text-align: center;">
-                    <button class="action-btn" style="width: auto; padding: 4px 20px;" onclick="closeAlert()">OK</button>
-                </div>
+                <div id="alertMsg" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 14px; white-space: pre-wrap;"></div>
+                <div style="text-align: center;"><button class="action-btn" style="width: auto; padding: 4px 20px;" onclick="closeAlert()">OK</button></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Clock Update
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }, 1000);
+        // Clock
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
-        // Custom Alert Logic (Replaces default alert)
+        // Alert
         function customAlert(message, title = "System Message") {
             document.getElementById('alertTitle').innerText = title;
             document.getElementById('alertMsg').innerHTML = `<span>💬</span> <div>${message}</div>`;
@@ -108,17 +102,13 @@
         }
         function closeAlert() { document.getElementById('customAlertOverlay').style.display = 'none'; }
 
-        // Start Menu Logic
+        // Start Menu
         function toggleStart() {
             const menu = document.getElementById('startMenu');
             const btn = document.getElementById('startBtn');
-            if(menu.style.display === 'block') {
-                menu.style.display = 'none';
-                btn.classList.remove('active');
-            } else {
-                menu.style.display = 'block';
-                btn.classList.add('active');
-            }
+            const isBlock = menu.style.display === 'block';
+            menu.style.display = isBlock ? 'none' : 'block';
+            isBlock ? btn.classList.remove('active') : btn.classList.add('active');
         }
         document.addEventListener('click', (e) => {
             if(!e.target.closest('#startMenu') && !e.target.closest('#startBtn')) {
@@ -127,60 +117,60 @@
             }
         });
 
-        // index.html ရဲ့ <script> ထဲက loadDesktop နဲ့ openItem နေရာမှာ အစားထိုးရန်
+        // Config Loading
+        let osConfig = {}; 
+        let folderHistory = []; // For "Back" button
 
-        let osConfig = {}; // Config အားလုံးကို သိမ်းထားမည့် Variable
-
-        // Fetch Desktop Config
         async function loadDesktop() {
             const res = await fetch('/api/get-config');
             let data = await res.json();
             
-            // အဟောင်း (Array) ပုံစံဖြစ်နေရင် အသစ်ပုံစံပြောင်းပေးရန်
-            if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "Retro OS System Info", items: data }; }
+            if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
             osConfig = data;
 
-            // Wallpaper ပြောင်းရန်
             document.body.style.background = osConfig.wallpaper || '#008080';
             document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
 
-            const desktop = document.getElementById('desktop');
-            renderItems(osConfig.items, desktop); // Desktop ပေါ်မှာ ပုံဖော်ရန်
+            renderItems(osConfig.items, document.getElementById('desktop'), false);
         }
 
-        // Icon လေးတွေ ပုံဖော်ပေးတဲ့ Function သီးသန့်ခွဲထုတ်လိုက်သည် (Folder တွေအတွက်ပါ သုံးလို့ရအောင်)
-        function renderItems(itemsArray, container) {
-            container.innerHTML = ''; // အရင်ရှင်းထုတ်မည်
-            itemsArray.forEach(item => {
+        function renderItems(itemsArray, container, isFolder = false) {
+            container.innerHTML = ''; 
+            if(isFolder) container.className = 'folder-grid';
+            
+            (itemsArray || []).forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'desktop-icon';
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
                 div.ondblclick = () => openItem(item);
-                
-                // Touch handling
                 let lastTap = 0;
                 div.addEventListener('touchend', (e) => {
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - lastTap;
-                    if (tapLength < 500 && tapLength > 0) { openItem(item); e.preventDefault(); }
-                    lastTap = currentTime;
+                    const ct = new Date().getTime();
+                    if (ct - lastTap < 500 && ct - lastTap > 0) { openItem(item); e.preventDefault(); }
+                    lastTap = ct;
                 });
                 
                 container.appendChild(div);
             });
         }
 
-        function openItem(item) {
+        function openItem(item, isBack = false) {
             const win = document.getElementById('appWindow');
-            document.getElementById('winTitle').innerText = item.title;
             const contentArea = document.getElementById('winContent');
+            const toolbar = document.getElementById('winToolbar');
+
+            if(!isBack && item.type === 'folder') { folderHistory.push(item); }
+            toolbar.style.display = folderHistory.length > 0 ? 'block' : 'none';
+            document.getElementById('winTitle').innerText = item.title;
 
             if(item.type === 'link') {
                 window.open(item.url, '_blank');
+                if(!isBack) folderHistory.pop(); // Remove if link opened externally
                 return;
             } else if(item.type === 'text') {
-                contentArea.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif;">${item.content}</pre>`;
+                contentArea.innerHTML = `<pre style="white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif;">${item.content || ''}</pre>`;
             } else if(item.type === 'app' && item.content === 'contact_form') {
                 contentArea.innerHTML = `
                     <div style="margin-bottom: 5px;"><b>Name:</b></div><input type="text" id="sName" placeholder="Optional">
@@ -190,83 +180,72 @@
                     <p id="sStatus" style="color: #000080; font-weight:bold; display:none; text-align:center; margin-bottom:0; background:#dfdfdf; padding:5px; border:inset 2px;">Sent Successfully!</p>
                 `;
             } else if(item.type === 'folder') {
-                // Folder အမျိုးအစားဆိုလျှင် အတွင်းထဲက children တွေကို ထပ်ဆွဲထုတ်ပြမည်
-                contentArea.innerHTML = `<div id="folder-${item.id}" style="display: flex; gap: 25px; flex-wrap: wrap; align-items: flex-start;"></div>`;
-                renderItems(item.children || [], document.getElementById(`folder-${item.id}`));
+                renderItems(item.children || [], contentArea, true);
             }
             
-            // Bring to front
             win.style.display = 'block';
             win.style.zIndex = 1000;
         }
 
-        function closeWindow() { document.getElementById('appWindow').style.display = 'none'; }
+        function goBack() {
+            folderHistory.pop();
+            if(folderHistory.length > 0) {
+                openItem(folderHistory[folderHistory.length - 1], true);
+            } else {
+                closeWindow();
+            }
+        }
+
+        function closeWindow() { 
+            document.getElementById('appWindow').style.display = 'none'; 
+            folderHistory = []; 
+        }
 
         async function sendMsg() {
             const btn = document.getElementById('sBtn');
             const msg = document.getElementById('sMsg').value;
-            if(!msg.trim()) {
-                customAlert("Please write a message before sending.", "Error");
-                return;
-            }
+            if(!msg.trim()) return customAlert("Please write a message before sending.", "Error");
             
             btn.innerText = "Sending..."; btn.disabled = true;
             try {
                 const res = await fetch('/api/send', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: document.getElementById('sName').value,
-                        contact: document.getElementById('sContact').value,
-                        message: msg
-                    })
+                    body: JSON.stringify({ name: document.getElementById('sName').value, contact: document.getElementById('sContact').value, message: msg })
                 });
                 if(res.ok) {
                     document.getElementById('sStatus').style.display = 'block';
                     document.getElementById('sMsg').value = '';
                     setTimeout(() => document.getElementById('sStatus').style.display = 'none', 3000);
-                } else {
-                    customAlert("Failed to send message. Please try again.", "Server Error");
-                }
+                } else customAlert("Failed to send.", "Error");
             } catch(e) { customAlert("Network error.", "Error"); }
             btn.innerText = "Send Message"; btn.disabled = false;
         }
 
-        // Optimized Draggable Window Logic (Supports mouse & touch)
+        // Drag Window
         dragElement(document.getElementById("appWindow"));
         function dragElement(elmnt) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            let p1=0, p2=0, p3=0, p4=0;
             const header = document.getElementById("appWindowHeader");
-            header.onmousedown = dragStart;
-            header.ontouchstart = dragStart;
+            header.onmousedown = dragStart; header.ontouchstart = dragStart;
 
             function dragStart(e) {
-                e = e || window.event;
-                // Prevent drag if window is full width on mobile
                 if (window.innerWidth <= 500) return; 
-                
-                if(e.type === "touchstart") { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
-                else { pos3 = e.clientX; pos4 = e.clientY; e.preventDefault(); }
-                
+                if(e.type === "touchstart") { p3 = e.touches[0].clientX; p4 = e.touches[0].clientY; } 
+                else { p3 = e.clientX; p4 = e.clientY; e.preventDefault(); }
                 document.onmouseup = dragEnd; document.onmousemove = dragMove;
                 document.ontouchend = dragEnd; document.ontouchmove = dragMove;
             }
             function dragMove(e) {
-                e = e || window.event;
                 if(e.type === "touchmove") {
-                    pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY;
-                    pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+                    p1 = p3 - e.touches[0].clientX; p2 = p4 - e.touches[0].clientY;
+                    p3 = e.touches[0].clientX; p4 = e.touches[0].clientY;
                 } else {
                     e.preventDefault();
-                    pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-                    pos3 = e.clientX; pos4 = e.clientY;
+                    p1 = p3 - e.clientX; p2 = p4 - e.clientY; p3 = e.clientX; p4 = e.clientY;
                 }
-                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                elmnt.style.top = (elmnt.offsetTop - p2) + "px"; elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
             }
-            function dragEnd() {
-                document.onmouseup = null; document.onmousemove = null;
-                document.ontouchend = null; document.ontouchmove = null;
-            }
+            function dragEnd() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
         }
 
         loadDesktop();
