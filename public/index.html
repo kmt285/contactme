@@ -234,6 +234,11 @@
                     div.onclick = () => {
                         if(item.action === 'refresh') window.location.reload();
                         else if(item.action === 'sysinfo') customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
+                        // ဤနေရာတွင် Icon များကို ရှင်းလင်းပြီး မူလအတိုင်းပြန်ထားမည့် Auto Arrange ကို ထည့်ပါသည်
+                        else if(item.action === 'auto_arrange') {
+                            localStorage.removeItem('icon_positions');
+                            window.location.reload();
+                        }
                         else if(item.url) window.open(item.url, '_blank');
                     };
                     ctx.appendChild(div);
@@ -352,7 +357,7 @@
 
             function dragStart(e) {
                 isDragging = false;
-                elmnt.dataset.dragging = "false"; // Drag လုပ်နေသလား မှတ်သားရန်
+                elmnt.dataset.dragging = "false"; 
                 if (e.type === "touchstart") { p3 = e.touches[0].clientX; p4 = e.touches[0].clientY; } 
                 else { p3 = e.clientX; p4 = e.clientY; }
                 startX = p3; startY = p4;
@@ -361,6 +366,77 @@
                 document.ontouchend = dragEnd; document.ontouchmove = dragMove;
             }
 
+            function dragMove(e) {
+                let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+                let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+                if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
+                    isDragging = true;
+                    elmnt.dataset.dragging = "true";
+                    elmnt.style.zIndex = 1000; // Drag လုပ်နေစဉ် အပေါ်ဆုံးရောက်နေစေရန်
+                }
+
+                if (isDragging) {
+                    e.preventDefault();
+                    p1 = p3 - clientX; p2 = p4 - clientY;
+                    p3 = clientX; p4 = clientY;
+                    
+                    let newTop = elmnt.offsetTop - p2;
+                    let newLeft = elmnt.offsetLeft - p1;
+
+                    // (၁) မျက်နှာပြင် အပြင်ဘက်သို့ မထွက်သွားစေရန် ဘောင် (Boundaries) သတ်မှတ်ခြင်း
+                    const taskbarHeight = 35;
+                    const maxTop = window.innerHeight - elmnt.offsetHeight - taskbarHeight;
+                    const maxLeft = window.innerWidth - elmnt.offsetWidth;
+
+                    if (newTop < 0) newTop = 0;
+                    if (newLeft < 0) newLeft = 0;
+                    if (newTop > maxTop) newTop = maxTop;
+                    if (newLeft > maxLeft) newLeft = maxLeft;
+
+                    elmnt.style.top = newTop + "px";
+                    elmnt.style.left = newLeft + "px";
+                }
+            }
+
+            function dragEnd() {
+                document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
+
+                if (isDragging) {
+                    elmnt.style.zIndex = ""; 
+
+                    // (၂) လွှတ်လိုက်ချိန်တွင် Grid ပုံစံ နေရာကျသွားစေရန် တွက်ချက်ခြင်း (100x100 Grid System)
+                    let currentTop = parseInt(elmnt.style.top);
+                    let currentLeft = parseInt(elmnt.style.left);
+                    
+                    // Base position 20px ကို အခြေခံ၍ Grid ချမည်
+                    let snappedTop = Math.round((currentTop - 20) / 100) * 100 + 20;
+                    let snappedLeft = Math.round((currentLeft - 20) / 100) * 100 + 20;
+
+                    // Grid ချပြီးနောက် ဘောင်အပြင်ပြန်ရောက်မသွားအောင် ထပ်စစ်ခြင်း
+                    const taskbarHeight = 35;
+                    const maxTop = window.innerHeight - elmnt.offsetHeight - taskbarHeight;
+                    const maxLeft = window.innerWidth - elmnt.offsetWidth;
+                    
+                    if (snappedTop < 20) snappedTop = 20;
+                    if (snappedLeft < 20) snappedLeft = 20;
+                    if (snappedTop > maxTop) snappedTop = Math.floor((maxTop - 20) / 100) * 100 + 20;
+                    if (snappedLeft > maxLeft) snappedLeft = Math.floor((maxLeft - 20) / 100) * 100 + 20;
+
+                    // Grid တိတိကျကျဖြစ်သွားသော နေရာသို့ ချပေးမည်
+                    elmnt.style.top = snappedTop + "px";
+                    elmnt.style.left = snappedLeft + "px";
+
+                    setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
+                    
+                    // ရောက်သွားသော Grid နေရာကို Local Storage တွင် Auto မှတ်သိမ်းပေးမည်
+                    let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
+                    positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
+                    localStorage.setItem('icon_positions', JSON.stringify(positions));
+                }
+            }
+        }
             function dragMove(e) {
                 let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
                 let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
