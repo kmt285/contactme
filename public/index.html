@@ -16,7 +16,7 @@
         .icon-title { font-size: 13px; padding: 2px 4px; display: inline-block; word-break: break-word; pointer-events: none; }
 
         /* Taskbar & Start Menu */
-        #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 100000; }
+        #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 100000; }
         .start-btn { font-weight: bold; padding: 4px 10px; border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); background: var(--win-bg); cursor: pointer; display: flex; align-items: center; gap: 5px;}
         .start-btn:active, .start-btn.active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
         .clock { margin-left: auto; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); padding: 4px 10px; font-size: 13px; }
@@ -40,26 +40,19 @@
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; min-width: 250px; min-height: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: none; flex-direction: column; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; }
         
-        /* Window Controls */
+        /* Window Controls & Maximized State */
         .window-controls { display: flex; gap: 3px; align-items: center; }
         .win-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); cursor: pointer; width: 22px; height: 22px; padding: 0; margin: 0; position: relative; box-sizing: border-box; }
-        .win-btn:active:not(:disabled) { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
-        .win-btn:disabled { cursor: default; }
-        
+        .win-btn:active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
         .win-btn.min::before { content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 2px; background: #000; transform: translate(-50%, -50%); }
-        .win-btn.min:active:not(:disabled)::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)); }
-        
+        .win-btn.min:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)); }
         .win-btn.max::before { content: ''; position: absolute; top: 4px; left: 4px; width: 10px; height: 9px; border: 1px solid #000; border-top: 2px solid #000; box-sizing: border-box; }
-        .win-btn.max:active:not(:disabled)::before { top: 5px; left: 5px; }
-        
+        .win-btn.max:active::before { top: 5px; left: 5px; }
         .window.maximized .win-btn.max::before { width: 8px; height: 7px; top: 6px; left: 4px; }
         .window.maximized .win-btn.max::after { content: ''; position: absolute; width: 8px; height: 7px; border: 1px solid #000; border-top: 2px solid #000; top: 3px; left: 7px; box-sizing: border-box; }
-        
         .win-btn.close::before, .win-btn.close::after { content: ''; position: absolute; top: 50%; left: 50%; width: 11px; height: 1.5px; background: #000; }
-        .win-btn.close:disabled::before, .win-btn.close:disabled::after { background: #888; } /* Disabled Close button color */
         .win-btn.close::before { transform: translate(-50%, -50%) rotate(45deg); }
         .win-btn.close::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
         .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
         .window-content { padding: 0; font-size: 14px; background: var(--win-bg); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 
@@ -82,9 +75,9 @@
         .folder-grid .folder-icon:active .icon-title { background: var(--win-title); color: white; border: 1px dotted black; }
         
         /* Forms */
-        input[type="text"], input[type="password"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 4px 6px; font-family: 'MS Sans Serif', sans-serif; font-size: 13px; margin-bottom: 10px; outline: none;}
-        button.action-btn { background: var(--win-bg); border: outset 2px; padding: 4px 15px; font-weight: normal; font-family: 'MS Sans Serif', sans-serif; cursor: pointer; width: 100%; margin-top: 5px; font-size: 13px;}
-        button.action-btn:active { border: inset 2px; padding: 5px 14px 3px 16px; }
+        input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
+        button.action-btn { background: var(--win-bg); border: outset 2px; padding: 6px 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px;}
+        button.action-btn:active { border: inset 2px; }
 
         /* Custom Alert Modal */
         #customAlertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1000000; }
@@ -94,21 +87,22 @@
             .window { width: 90% !important; left: 5% !important; top: 10% !important; transform: none !important; }
             #customAlert { width: 85% !important; }
             #desktop { gap: 15px; }
-            #login-view .window { width: 95% !important; left: 2.5% !important; top: 20% !important; }
         }
 
-        /* --- Boot Screen & Retro Login Styles --- */
+        /* --- New Boot Screen Styles --- */
         #windows-boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             z-index: 9999999; display: flex; justify-content: center; align-items: center;
             color: white; 
-            transition: background 0.5s ease, opacity 0.3s ease;
+            transition: background 0.5s ease, opacity 0.5s ease;
         }
 
-        /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop ကို မြင်ရစေမည် */
+        /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop Wallpaper ကို Blur လုပ်မည် */
         #windows-boot-screen.login-mode {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
 
         #loading-view, #login-view {
@@ -122,23 +116,63 @@
             opacity: 0;
             animation: fadeInLogo 2s ease-in-out forwards;
         }
-        
         @keyframes fadeInLogo {
-            0% { opacity: 0; transform: scale(0.95); }
+            0% { opacity: 0; transform: scale(0.9); }
             100% { opacity: 1; transform: scale(1); }
         }
         
-        /* Loading Spinner Fade In */
+        /* Loading Spinner */
         .windows-loader {
             position: absolute;
             bottom: 15%; 
             border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #0078D7;
             border-radius: 50%; width: 40px; height: 40px;
             opacity: 0;
-            animation: spin 1s linear infinite, fadeInLogo 1s ease-in-out 1s forwards;
+            /* Spinner က Logo ပေါ်ပြီးမှ လင်းလာအောင် delay (1s) ထည့်ထားပါတယ် */
+            animation: spin 1s linear infinite, fadeInLoader 1s ease-in-out 1s forwards;
         }
+        @keyframes fadeInLoader { to { opacity: 1; } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* --------------------------------- */
+
+        /* Login Style (Modern Layout + Retro Theme) */
+        .profile-pic {
+            background: var(--win-bg); /* Retro မီးခိုးရောင် */
+            border: inset 3px; /* Retro အချိုင့်ပုံစံ */
+            border-radius: 50%; /* Modern အဝိုင်း */
+            width: 120px; height: 120px;
+            display: flex; justify-content: center; align-items: center; margin-bottom: 20px;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.5); /* Retro shadow */
+        }
+        .profile-pic svg { fill: #000; } /* Icon ကို အမည်းရောင်ပြောင်းထားပါတယ် */
+
+        .profile-name { 
+            font-size: 28px; font-weight: bold; margin-bottom: 30px; letter-spacing: 1px;
+            color: white; 
+            text-shadow: 2px 2px 0px #000; /* Retro Pixel Shadow */
+            font-family: 'MS Sans Serif', Tahoma, sans-serif; /* Retro Font */
+        }
+
+        #sign-in-btn {
+            background: var(--win-bg);
+            border-top: 2px solid var(--win-border-light); 
+            border-left: 2px solid var(--win-border-light); 
+            border-right: 2px solid var(--win-border-dark); 
+            border-bottom: 2px solid var(--win-border-dark);
+            color: black; font-family: 'MS Sans Serif', Tahoma, sans-serif;
+            padding: 8px 40px; font-size: 16px; font-weight: bold;
+            cursor: pointer; 
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        #sign-in-btn:hover { background: #dfdfdf; }
+        #sign-in-btn:active { 
+            /* Button နှိပ်လိုက်ရင် အထဲဝင်သွားတဲ့ Effect */
+            border-top: 2px solid var(--win-border-dark); 
+            border-left: 2px solid var(--win-border-dark); 
+            border-right: 2px solid var(--win-border-light); 
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 9px 39px 7px 41px; 
+            box-shadow: none;
+        }
     </style>
     <script>
         try {
@@ -161,51 +195,23 @@
 </head>
 <body>
 
-    <!-- --- New Windows Style Boot & Retro Login Sequence --- -->
+    <!-- --- New Windows Style Boot & Login Sequence --- -->
     <div id="windows-boot-screen">
         <!-- Loading Screen -->
         <div id="loading-view">
-            <!-- Github ပေါ်က Raw Image Link -->
+            <!-- Github ပေါ်က Raw Image Link ကို မှန်ကန်စွာချိတ်ဆက်ထားပါသည် -->
             <img src="https://raw.githubusercontent.com/kmt285/contactme/main/logo.png" alt="Logo" class="boot-logo">
             <div class="windows-loader"></div>
         </div>
         
-        <!-- Retro Windows 95/98 Login Screen -->
+        <!-- Login Screen (Modern Layout with Retro Colors) -->
         <div id="login-view" style="display: none;">
-            <!-- Windows Retro Container -->
-            <div class="window" style="position: relative; display: flex; flex-direction: column; top: auto; left: auto; transform: none; width: 420px; min-width: 300px; min-height: auto; box-shadow: 2px 2px 10px rgba(0,0,0,0.6);">
-                <div class="title-bar">
-                    <span>Enter Network Password</span>
-                    <div class="window-controls">
-                        <!-- X ခလုတ်ကို နှိပ်မရအောင် (Disabled) လုပ်ထားပါသည် -->
-                        <button class="win-btn close" disabled></button>
-                    </div>
-                </div>
-                <!-- Content Area -->
-                <div style="padding: 15px; background: var(--win-bg); display: flex; gap: 15px; color: black; text-align: left;">
-                    <!-- Retro Key Icon -->
-                    <img src="https://win98icons.alexmeub.com/icons/png/key-0.png" alt="Key" style="width: 32px; height: 32px; image-rendering: pixelated; margin-top: 5px;">
-                    
-                    <div style="flex: 1;">
-                        <div style="margin-bottom: 15px; font-size: 13px;">Type a user name and password to log on.</div>
-                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                            <label style="width: 80px; font-size: 13px;">User name:</label>
-                            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
-                            <input type="text" value="Guest" style="flex: 1; margin:0;">
-                        </div>
-                        <div style="display: flex; align-items: center;">
-                            <label style="width: 80px; font-size: 13px;">Password:</label>
-                            <input type="password" value="" style="flex: 1; margin:0;">
-                        </div>
-                    </div>
-                    
-                    <!-- Buttons -->
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <button class="action-btn" id="sign-in-btn" style="width: 75px; margin:0;">OK</button>
-                        <button class="action-btn" style="width: 75px; margin:0;" onclick="alert('Log on process cannot be canceled.')">Cancel</button>
-                    </div>
-                </div>
+            <div class="profile-pic">
+                <svg viewBox="0 0 24 24" fill="inherit" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
             </div>
+            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
+            <div class="profile-name">Your Name</div>
+            <button id="sign-in-btn">Sign in</button>
         </div>
     </div>
     
@@ -243,7 +249,7 @@
     </div>
 
     <script>
-        // --- Boot Sequence JS ---
+        // --- New Boot Sequence JS ---
         const bootScreen = document.getElementById('windows-boot-screen');
         const loadingView = document.getElementById('loading-view');
         const loginView = document.getElementById('login-view');
@@ -253,23 +259,22 @@
         if (sessionStorage.getItem('isBooted') === 'true') {
             bootScreen.style.display = 'none';
         } else {
-            // Loading ပြီးပါက Background ကို ဖျောက်ပြီး Retro Login Box ပြမည်
             setTimeout(() => {
                 loadingView.style.display = 'none';
                 loginView.style.display = 'flex';
+                // Wallpaper ကို ဝါး(Blur) ပြီးပြရန် class အသစ်ထည့်မည်
                 bootScreen.classList.add('login-mode');
-            }, 3500); // Fade in animation အချိန်လုံလောက်အောင် 3.5 စက္ကန့် ထားပေးထားပါသည်
+            }, 3000); 
 
-            // OK ခလုတ်နှိပ်လျှင်
             signInBtn.addEventListener('click', () => {
-                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း ဖျောက်မည်
+                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out စလုပ်မည် (စာသားမပြောင်းတော့ပါ)
                 bootScreen.style.opacity = '0';
                 
                 setTimeout(() => {
                     bootScreen.style.display = 'none';
                     if(win98Sound) win98Sound.play().catch(e => console.log("Audio play blocked"));
                     sessionStorage.setItem('isBooted', 'true');
-                }, 300); // 0.3s Fade-out time
+                }, 500); 
             });
         }
         // -----------------------------
