@@ -75,8 +75,8 @@
         .folder-grid .folder-icon:active .icon-title { background: var(--win-title); color: white; border: 1px dotted black; }
         
         /* Forms */
-        input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
-        button.action-btn { background: var(--win-bg); border: outset 2px; padding: 6px 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px;}
+        input[type="text"], input[type="password"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 4px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
+        button.action-btn { background: var(--win-bg); border: outset 2px; padding: 4px 15px; font-weight: bold; font-family: 'MS Sans Serif', Tahoma, sans-serif; cursor: pointer; width: 100%; margin-top: 5px;}
         button.action-btn:active { border: inset 2px; }
 
         /* Custom Alert Modal */
@@ -89,7 +89,7 @@
             #desktop { gap: 15px; }
         }
 
-        /* --- New Boot Screen Styles --- */
+        /* --- Boot Screen & Login Styles --- */
         #windows-boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
@@ -98,11 +98,9 @@
             transition: background 0.5s ease, opacity 0.5s ease;
         }
 
-        /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop Wallpaper ကို Blur လုပ်မည် */
+        /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop ကို မြင်ရစေမည် */
         #windows-boot-screen.login-mode {
-            background: rgba(0, 0, 0, 0.3); /* အနည်းငယ် မှောင်ပေးထားမည် */
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            background: transparent;
         }
 
         #loading-view, #login-view {
@@ -110,32 +108,29 @@
             width: 100%; height: 100%; position: relative;
         }
         
-        /* Loading Style */
-        .boot-logo { width: 150px; max-height: 150px; object-fit: contain; }
+        /* Logo Fade In Animation */
+        .boot-logo { 
+            width: 150px; max-height: 150px; object-fit: contain; 
+            opacity: 0;
+            animation: fadeInLogo 1.5s ease-in-out forwards;
+        }
         
-        /* Loading Spinner ကို အောက်ခြေသို့ ပို့ထားခြင်း */
+        @keyframes fadeInLogo {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Loading Spinner */
         .windows-loader {
             position: absolute;
-            bottom: 15%; /* အောက်ခြေမှ 15% အကွာတွင်ထားမည် */
+            bottom: 15%; 
             border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #0078D7;
             border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
+            opacity: 0;
+            animation: spin 1s linear infinite, fadeInLogo 1s ease-in-out 0.5s forwards;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Login Style */
-        .profile-pic {
-            background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 120px; height: 120px;
-            display: flex; justify-content: center; align-items: center; margin-bottom: 20px;
-        }
-        .profile-name { font-size: 28px; font-weight: 500; margin-bottom: 30px; letter-spacing: 1px;}
-        #sign-in-btn {
-            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.4);
-            color: white; padding: 10px 40px; font-size: 16px; border-radius: 4px;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        #sign-in-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: white; }
-        #sign-in-btn:active { transform: scale(0.96); }
+        /* --------------------------------- */
     </style>
     <script>
         try {
@@ -158,23 +153,46 @@
 </head>
 <body>
 
-    <!-- --- New Windows Style Boot & Login Sequence --- -->
+    <!-- --- New Windows Style Boot & Retro Login Sequence --- -->
     <div id="windows-boot-screen">
         <!-- Loading Screen -->
         <div id="loading-view">
-            <!-- Github ပေါ်က Raw Image Link ကို မှန်ကန်စွာချိတ်ဆက်ထားပါသည် -->
+            <!-- Github ပေါ်က Raw Image Link -->
             <img src="https://raw.githubusercontent.com/kmt285/contactme/main/logo.png" alt="Logo" class="boot-logo">
             <div class="windows-loader"></div>
         </div>
         
-        <!-- Login Screen -->
+        <!-- Retro Login Screen -->
         <div id="login-view" style="display: none;">
-            <div class="profile-pic">
-                <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <div class="window" style="position: relative; display: flex; flex-direction: column; top: auto; left: auto; transform: none; width: 420px; min-width: auto; min-height: auto; box-shadow: 2px 2px 10px rgba(0,0,0,0.6);">
+                <div class="title-bar">
+                    <span>Enter Network Password</span>
+                    <div class="window-controls">
+                        <!-- X ခလုတ်ကို နှိပ်မရအောင် (Disabled) လုပ်ထားပါသည် -->
+                        <button class="win-btn close" disabled></button>
+                    </div>
+                </div>
+                <div style="padding: 15px; background: var(--win-bg); display: flex; gap: 15px; color: black; text-align: left;">
+                    <!-- Retro Key Icon -->
+                    <img src="https://win98icons.alexmeub.com/icons/png/key-0.png" alt="Key" style="width: 32px; height: 32px; image-rendering: pixelated;">
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 15px; font-size: 13px;">Type a user name and password to log on.</div>
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <label style="width: 80px; font-size: 13px;">User name:</label>
+                            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
+                            <input type="text" value="Your Name" readonly style="flex: 1; margin:0; padding: 2px 4px;">
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <label style="width: 80px; font-size: 13px;">Password:</label>
+                            <input type="password" value="******" readonly style="flex: 1; margin:0; padding: 2px 4px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <button class="action-btn" id="sign-in-btn" style="width: 75px; margin:0;">OK</button>
+                        <button class="action-btn" style="width: 75px; margin:0;" onclick="alert('Log on process cannot be canceled.')">Cancel</button>
+                    </div>
+                </div>
             </div>
-            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
-            <div class="profile-name">Your Name</div>
-            <button id="sign-in-btn">Sign in</button>
         </div>
     </div>
     
@@ -212,7 +230,7 @@
     </div>
 
     <script>
-        // --- New Boot Sequence JS ---
+        // --- Boot Sequence JS ---
         const bootScreen = document.getElementById('windows-boot-screen');
         const loadingView = document.getElementById('loading-view');
         const loginView = document.getElementById('login-view');
@@ -222,17 +240,15 @@
         if (sessionStorage.getItem('isBooted') === 'true') {
             bootScreen.style.display = 'none';
         } else {
+            // Loading ပြီးပါက Background ကို Transparent ပြောင်းပြီး Login Box ပြမည်
             setTimeout(() => {
                 loadingView.style.display = 'none';
                 loginView.style.display = 'flex';
-                // Wallpaper ကို ဝါး(Blur) ပြီးပြရန် class အသစ်ထည့်မည်
                 bootScreen.classList.add('login-mode');
-            }, 3000); 
+            }, 3500); // Animation လေးတွေပိုမြင်ရအောင် 3.5 စက္ကန့်ထားပေးထားပါသည်
 
             signInBtn.addEventListener('click', () => {
-                signInBtn.style.background = "rgba(255, 255, 255, 0.3)";
-                
-                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out စလုပ်မည်
+                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out လေးနဲ့ ပျောက်သွားမည်
                 bootScreen.style.opacity = '0';
                 
                 setTimeout(() => {
