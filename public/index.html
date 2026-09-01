@@ -105,54 +105,10 @@
             #desktop { gap: 15px; }
         }
 
-        <!-- --- New Windows Style Boot & Login Sequence --- -->
-    <div id="windows-boot-screen">
-        <!-- Loading Screen -->
-        <div id="loading-view">
-            <!-- Github ပေါ်က သင့် Logo URL ကို အောက်တွင်ထည့်ပါ -->
-            <img src="https://github.com/kmt285/contactme/logo.png" alt="Logo" class="boot-logo">
-            <div class="windows-loader"></div>
-        </div>
-        
-        <!-- Login Screen -->
-        <div id="login-view" style="display: none;">
-            <!-- User Icon နေရာတွင် ပုံပြောင်းချင်ပါက img tag သုံးနိုင်ပါသည် -->
-            <div class="profile-pic">
-                <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
-            </div>
-            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
-            <div class="profile-name">Your Name</div>
-            <button id="sign-in-btn">Sign in</button>
-        </div>
-    </div>
-    <!-- ----------------------------------------------- -->
-    </style>
-    <script>
-        try {
-            const cachedBg = localStorage.getItem('os_wallpaper');
-            if (cachedBg) {
-                let bgVal = cachedBg;
-                if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
-                    bgVal = `url('${bgVal}')`;
-                }
-                const style = document.createElement('style');
-                if (bgVal.startsWith('url')) {
-                    style.textContent = `body { background-image: ${bgVal} !important; background-size: cover !important; background-position: center !important; }`;
-                } else {
-                    style.textContent = `body { background: ${bgVal} !important; }`;
-                }
-                document.head.appendChild(style);
-            }
-        } catch(e) {}
-    </script>
-</head>
-<body>
-
-    <body>
-    /* --- New Boot Screen Styles --- */
+        /* --- New Boot Screen Styles --- */
         #windows-boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; /* နောက်ခံအရောင် */
+            background: #000;
             z-index: 9999999; display: flex; justify-content: center; align-items: center;
             color: white; transition: opacity 0.5s ease;
         }
@@ -183,7 +139,53 @@
         }
         #sign-in-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: white; }
         #sign-in-btn:active { transform: scale(0.96); }
-        /* ------------------------------ */
+    </style>
+    <script>
+        try {
+            const cachedBg = localStorage.getItem('os_wallpaper');
+            if (cachedBg) {
+                let bgVal = cachedBg;
+                if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
+                    bgVal = `url('${bgVal}')`;
+                }
+                const style = document.createElement('style');
+                if (bgVal.startsWith('url')) {
+                    style.textContent = `body { background-image: ${bgVal} !important; background-size: cover !important; background-position: center !important; }`;
+                } else {
+                    style.textContent = `body { background: ${bgVal} !important; }`;
+                }
+                document.head.appendChild(style);
+            }
+        } catch(e) {}
+    </script>
+</head>
+<body>
+
+    <!-- --- New Windows Style Boot & Login Sequence --- -->
+    <div id="windows-boot-screen">
+        <!-- Loading Screen -->
+        <div id="loading-view">
+            <!-- Github ပေါ်က သင့် Logo URL ကို အောက်တွင်ထည့်ပါ -->
+            <img src="https://github.com/kmt285/contactme/logo.png" alt="Logo" class="boot-logo">
+            <div class="windows-loader"></div>
+        </div>
+        
+        <!-- Login Screen -->
+        <div id="login-view" style="display: none;">
+            <!-- User Icon နေရာတွင် ပုံပြောင်းချင်ပါက img tag သုံးနိုင်ပါသည် -->
+            <div class="profile-pic">
+                <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            </div>
+            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
+            <div class="profile-name">Your Name</div>
+            <button id="sign-in-btn">Sign in</button>
+        </div>
+    </div>
+    
+    <!-- Audio File for Boot Sound -->
+    <audio id="win98-sound" src="https://www.winhistory.de/more/winstart/mp3/wfw311.mp3"></audio>
+    <!-- ----------------------------------------------- -->
+
     <div id="contextMenu"></div>
     <div id="desktop"></div>
 
@@ -243,7 +245,7 @@
                     
                     setTimeout(() => {
                         bootScreen.style.display = 'none';
-                        win98Sound.play().catch(e => console.log("Audio play blocked"));
+                        if(win98Sound) win98Sound.play().catch(e => console.log("Audio play blocked"));
                         sessionStorage.setItem('isBooted', 'true'); // နောက်တစ်ခါ Reload လုပ်ရင် မပြတော့အောင် သိမ်းထားမည်
                     }, 500); // 0.5 စက္ကန့် (Opacity transition time)
                     
