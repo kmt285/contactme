@@ -225,9 +225,11 @@
                             window.location.reload();
                         } else if (item.action === 'sysinfo') {
                             customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        } else if (item.action === 'auto_arrange' || (item.url && item.url.includes('auto_arrange'))) {
+                        } else if(item.action === 'auto_arrange') {
+                            localStorage.removeItem('icon_positions_desktop');
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
+                        }
                         } else if (item.url) {
                             window.open(item.url, '_blank');
                         }
@@ -277,7 +279,9 @@
 
         function renderDesktopItems(itemsArray, container) {
             container.innerHTML = ''; 
-            let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
+            
+            // Desktop အတွက် သီးသန့် Key ကို သုံးမည်
+            let positions = JSON.parse(localStorage.getItem('icon_positions_desktop') || '{}');
             let defaultTop = 20;
             let defaultLeft = 20;
 
@@ -299,7 +303,7 @@
                     }
                 }
 
-                makeIconDraggable(div, item.id);
+                makeIconDraggable(div, item.id, 'icon_positions_desktop'); // Key နာမည်ကို ထည့်ပေးပါ
                 
                 div.ondblclick = () => {
                     if (div.dataset.dragging !== "true") openItem(item);
@@ -317,7 +321,7 @@
             });
         }
 
-        function makeIconDraggable(elmnt, itemId) {
+        function makeIconDraggable(elmnt, itemId, storageKey = 'icon_positions_desktop') {
             let p1=0, p2=0, p3=0, p4=0;
             let isDragging = false;
             let startX, startY;
@@ -388,16 +392,17 @@
                     if (snappedTop < 20) snappedTop = 20;
                     if (snappedLeft < 20) snappedLeft = 20;
                     if (snappedTop > maxTop) snappedTop = Math.max(20, Math.floor((maxTop - 20) / 100) * 100 + 20);
-                    if (snappedLeft > maxLeft) snappedLeft = Math.max(20, Math.floor((maxLeft - 20) / 100) * 100 + 20);
+                    if (snappedLeft > maxLeft) snappedLeft = Math.max(20, Math.floor((maxLeft - 20) / 100) * 100 + 20;
 
                     elmnt.style.top = snappedTop + "px";
                     elmnt.style.left = snappedLeft + "px";
 
                     setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
                     
-                    let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
+                    // သက်ဆိုင်ရာ Storage Key ထဲတွင်သာ သီးသန့်သိမ်းဆည်းမည်
+                    let positions = JSON.parse(localStorage.getItem(storageKey) || '{}');
                     positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
-                    localStorage.setItem('icon_positions', JSON.stringify(positions));
+                    localStorage.setItem(storageKey, JSON.stringify(positions));
                 }
             }
         }
@@ -534,8 +539,17 @@
             (itemsArray || []).forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'desktop-icon';
+                // Folder ထဲတွင် absolute သုံးစရာမလိုဘဲ Grid အတိုင်း ပုံမှန်ပေါ်စေရန် position ကို static ဟု သတ်မှတ်ပေးသည်
+                div.style.position = 'static'; 
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
+                
                 div.ondblclick = () => handleFolderItemClick(item, winId);
+                let lastTap = 0;
+                div.addEventListener('touchend', (e) => {
+                    const ct = new Date().getTime();
+                    if (ct - lastTap < 500 && ct - lastTap > 0) { handleFolderItemClick(item, winId); e.preventDefault(); }
+                    lastTap = ct;
+                });
                 container.appendChild(div);
             });
         }
