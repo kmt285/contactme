@@ -105,34 +105,64 @@
             #desktop { gap: 15px; }
         }
 
-        /* --- Realistic Boot Sequence Styles --- */
-        #power-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #333 0%, #000 100%); z-index: 9999999; display: flex; justify-content: center; align-items: center; }
+        <!-- --- New Windows Style Boot & Login Sequence --- -->
+    <div id="windows-boot-screen">
+        <!-- Loading Screen -->
+        <div id="loading-view">
+            <!-- Github ပေါ်က သင့် Logo URL ကို အောက်တွင်ထည့်ပါ -->
+            <img src="https://raw.githubusercontent.com/your-repo/logo.png" alt="Logo" class="boot-logo">
+            <div class="windows-loader"></div>
+        </div>
         
-        /* Retro Computer Case Design */
-        .retro-power-box { background: #c0c0c0; padding: 40px 60px; border-top: 4px solid #fff; border-left: 4px solid #fff; border-right: 4px solid #666; border-bottom: 4px solid #666; box-shadow: 15px 15px 25px rgba(0,0,0,0.9); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px; border-radius: 5px; }
-        
-        /* LED Indicator */
-        #power-led { width: 12px; height: 12px; background: #600; border-radius: 50%; border: 2px inset #222; margin-bottom: 5px; transition: all 0.2s; }
-        
-        /* Physical Power Button */
-        #power-btn { width: 80px; height: 80px; border-radius: 50%; background: #d4d0c8; border-top: 5px solid #fff; border-left: 5px solid #fff; border-right: 5px solid #888; border-bottom: 5px solid #888; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 35px; color: #555; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: all 0.1s; }
-        #power-btn:active { border-top: 5px solid #888; border-left: 5px solid #888; border-right: 5px solid #fff; border-bottom: 5px solid #fff; background: #e0e0e0; transform: scale(0.95); }
-        .power-label { font-family: 'MS Sans Serif', Tahoma, sans-serif; font-size: 14px; font-weight: bold; color: #333; letter-spacing: 2px; }
+        <!-- Login Screen -->
+        <div id="login-view" style="display: none;">
+            <!-- User Icon နေရာတွင် ပုံပြောင်းချင်ပါက img tag သုံးနိုင်ပါသည် -->
+            <div class="profile-pic">
+                <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            </div>
+            <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
+            <div class="profile-name">Your Name</div>
+            <button id="sign-in-btn">Sign in</button>
+        </div>
+    </div>
+    <!-- ----------------------------------------------- -->
 
-        /* BIOS Screen */
-        #bios-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999998; color: #d3d3d3; font-family: 'Courier New', Courier, monospace; font-size: 17px; padding: 25px; box-sizing: border-box; display: none; line-height: 1.6; overflow: hidden; text-shadow: 0 0 2px rgba(211, 211, 211, 0.5); }
-        
-        /* Blinking Cursor */
-        .cursor::after { content: '_'; animation: blink 1s step-end infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* Smooth Fade-Out Effect (မီးဖြတ်ခနဲလင်းခြင်းကို ပယ်ဖျက်ပြီး ညင်သာစွာကူးပြောင်းခြင်း) */
-        @keyframes smooth-fade { 
-            0% { opacity: 1; } 
-            100% { opacity: 0; } 
+        /* --- New Boot Screen Styles --- */
+        #windows-boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; /* နောက်ခံအရောင် */
+            z-index: 9999999; display: flex; justify-content: center; align-items: center;
+            color: white; transition: opacity 0.5s ease;
         }
-        .fade-out-effect { animation: smooth-fade 0.6s ease-out forwards; }
-        /* -------------------------------------- */
+        #loading-view, #login-view {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%;
+        }
+        
+        /* Loading Style */
+        .boot-logo { width: 150px; margin-bottom: 50px; }
+        .windows-loader {
+            border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #0078D7;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Login Style */
+        .profile-pic {
+            background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 120px; height: 120px;
+            display: flex; justify-content: center; align-items: center; margin-bottom: 20px;
+        }
+        .profile-name { font-size: 28px; font-weight: 500; margin-bottom: 30px; letter-spacing: 1px;}
+        #sign-in-btn {
+            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white; padding: 10px 40px; font-size: 16px; border-radius: 4px;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        #sign-in-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: white; }
+        #sign-in-btn:active { transform: scale(0.96); }
+        /* ------------------------------ */
+
     </style>
     <script>
         try {
@@ -154,23 +184,6 @@
     </script>
 </head>
 <body>
-
-    <body>
-    <!-- --- Boot Sequence HTML --- -->
-    <div id="power-screen">
-        <div class="retro-power-box">
-            <div id="power-led"></div>
-            <div id="power-btn">⏻</div>
-            <div class="power-label">POWER</div>
-        </div>
-    </div>
-
-    <div id="bios-screen">
-        <div id="bios-text" style="display: inline;"></div><span class="cursor" id="bios-cursor"></span>
-    </div>
-
-    <audio id="win98-sound" src="https://www.winhistory.de/more/winstart/mp3/wfw311.mp3"></audio>
-    <!-- -------------------------- -->
 
     <div id="contextMenu"></div>
     <div id="desktop"></div>
@@ -203,71 +216,43 @@
 
     <script>
 
-        // --- Realistic Boot Sequence JS ---
-        const powerBtn = document.getElementById('power-btn');
-        const powerScreen = document.getElementById('power-screen');
-        const biosScreen = document.getElementById('bios-screen');
-        const biosText = document.getElementById('bios-text');
-        const biosCursor = document.getElementById('bios-cursor');
+        // --- New Boot Sequence JS ---
+        const bootScreen = document.getElementById('windows-boot-screen');
+        const loadingView = document.getElementById('loading-view');
+        const loginView = document.getElementById('login-view');
+        const signInBtn = document.getElementById('sign-in-btn');
         const win98Sound = document.getElementById('win98-sound');
-        const powerLed = document.getElementById('power-led');
 
+        // အရင်က Boot တက်ပြီးသားဆိုရင် Screen ကိုကျော်မည်
         if (sessionStorage.getItem('isBooted') === 'true') {
-            powerScreen.style.display = 'none';
-            biosScreen.style.display = 'none';
+            bootScreen.style.display = 'none';
         } else {
-            powerBtn.addEventListener('click', async () => {
-                // ၁။ ခလုတ်နှိပ်လိုက်တာနဲ့ LED မီးစိမ်း လင်းသွားမည်
-                powerLed.style.background = '#0f0';
-                powerLed.style.boxShadow = '0 0 15px #0f0';
-                powerLed.style.border = '2px inset #050';
+            // Website စဝင်ဝင်ချင်း Loading ပြမည်, ၃ စက္ကန့်ကြာရင် Login Screen ကိုပြောင်းမည်
+            setTimeout(() => {
+                loadingView.style.display = 'none';
+                loginView.style.display = 'flex';
+            }, 3000); 
+
+            // Sign In နှိပ်လိုက်လျှင်
+            signInBtn.addEventListener('click', () => {
+                signInBtn.innerText = "Welcome..."; // စာသားပြောင်းမည်
+                signInBtn.style.background = "rgba(255, 255, 255, 0.3)";
                 
-                // ၂။ မီးလင်းပြီး ၀.၅ စက္ကန့်အကြာမှ BIOS ဆီ သွားမည် (တကယ့်ခလုတ်နှိပ်သည့် Feel ရရန်)
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                powerScreen.style.display = 'none';
-                biosScreen.style.display = 'block';
-
-                const bootLines = [
-                    { text: "Award Modular BIOS v4.51PG, An Energy Star Ally", delay: 200 },
-                    { text: "Copyright (C) 1984-1998, Award Software, Inc.", delay: 300 },
-                    { text: "<br>", delay: 100 },
-                    { text: "PENTIUM-S CPU at 133MHz", delay: 200 },
-                    { text: "Memory Test : 32768K OK", delay: 1200 },
-                    { text: "<br>", delay: 100 },
-                    { text: "Award Plug and Play BIOS Extension v1.0A", delay: 200 },
-                    { text: "Initialize Plug and Play Cards...", delay: 600 },
-                    { text: "PNP Init Completed", delay: 200 },
-                    { text: "<br>", delay: 100 },
-                    { text: "Detecting IDE Primary Master ... WDC AC31600H", delay: 400 },
-                    { text: "Detecting IDE Primary Slave  ... None", delay: 200 },
-                    { text: "Detecting IDE Secondary Master ... CD-ROM Drive", delay: 500 },
-                    { text: "Detecting IDE Secondary Slave  ... None", delay: 200 },
-                    { text: "<br>", delay: 100 },
-                    { text: "Booting from Hard Disk...", delay: 800 },
-                    { text: "Starting Retro OS...", delay: 800 }
-                ];
-
-                for (let i = 0; i < bootLines.length; i++) {
-                    biosText.innerHTML += bootLines[i].text + (bootLines[i].text !== "<br>" ? "<br>" : "");
-                    await new Promise(resolve => setTimeout(resolve, bootLines[i].delay));
-                }
-
-                biosCursor.style.display = 'none';
-                
-                // ၃။ ရုပ်ဆိုးသော Flash Effect အစား ညင်သာစွာပျောက်သွားမည့် Fade Effect ထည့်သွင်းခြင်း
-                biosScreen.classList.add('fade-out-effect');
-
+                // ၁ စက္ကန့်ကြာပြီးနောက် Screen ကို မှိန်ပြီးပျောက်သွားစေမည်
                 setTimeout(() => {
-                    biosScreen.style.display = 'none';
-                    win98Sound.play().catch(e => console.log("Audio play blocked"));
-                    sessionStorage.setItem('isBooted', 'true');
-                }, 600); // 0.6 seconds ကြာမှ Desktop ကို အပြီးဖွင့်ပေးမည်
+                    bootScreen.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        bootScreen.style.display = 'none';
+                        win98Sound.play().catch(e => console.log("Audio play blocked"));
+                        sessionStorage.setItem('isBooted', 'true'); // နောက်တစ်ခါ Reload လုပ်ရင် မပြတော့အောင် သိမ်းထားမည်
+                    }, 500); // 0.5 စက္ကန့် (Opacity transition time)
+                    
+                }, 1000); // 1 စက္ကန့် fake loading အချိန်
             });
         }
-        // ------------------------------------
-
-        
+        // -----------------------------
+       
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
         function customAlert(message, title = "System Message") {
