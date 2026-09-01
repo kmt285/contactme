@@ -39,6 +39,7 @@
         /* Draggable & Resizable Window */
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; min-width: 250px; min-height: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: none; flex-direction: column; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; }
+        
         /* Window Controls & Maximized State */
         .window-controls { display: flex; gap: 3px; align-items: center; }
         .win-btn { 
@@ -55,29 +56,20 @@
             border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); 
         }
         
-        /* 1. Minimize Icon ကို Center တွင် ညီညီညာညာ ထားရန် */
         .win-btn.min::before { content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 2px; background: #000; transform: translate(-50%, -50%); }
         .win-btn.min:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)); }
         
-        /* 2. Maximize Icon (□) ကို CSS ဖြင့်ဆွဲခြင်း */
         .win-btn.max::before { content: ''; position: absolute; top: 4px; left: 4px; width: 10px; height: 9px; border: 1px solid #000; border-top: 2px solid #000; box-sizing: border-box; }
         .win-btn.max:active::before { top: 5px; left: 5px; }
         
-        /* 3. Restore Icon (❐) ကို CSS ဖြင့်ဆွဲခြင်း (Maximized ဖြစ်နေချိန်) */
         .window.maximized .win-btn.max::before { width: 8px; height: 7px; top: 6px; left: 4px; }
         .window.maximized .win-btn.max::after { content: ''; position: absolute; width: 8px; height: 7px; border: 1px solid #000; border-top: 2px solid #000; top: 3px; left: 7px; box-sizing: border-box; }
-        .window.maximized .win-btn.max:active::before { top: 7px; left: 5px; }
-        .window.maximized .win-btn.max:active::after { top: 4px; left: 8px; }
-
-        /* 4. Close Icon (X) ကို CSS ဖြင့်ဆွဲခြင်း */
+        
         .win-btn.close::before, .win-btn.close::after { content: ''; position: absolute; top: 50%; left: 50%; width: 11px; height: 1.5px; background: #000; }
         .win-btn.close::before { transform: translate(-50%, -50%) rotate(45deg); }
         .win-btn.close::after { transform: translate(-50%, -50%) rotate(-45deg); }
-        .win-btn.close:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)) rotate(45deg); }
-        .win-btn.close:active::after { transform: translate(calc(-50% + 1px), calc(-50% + 1px)) rotate(-45deg); }
 
         .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
-        .close-btn:active { border: inset 2px; }
         .window-content { padding: 0; font-size: 14px; background: var(--win-bg); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 
         /* Window Resizer Handles */
@@ -95,7 +87,6 @@
         .folder-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
         .folder-grid .desktop-icon { color: black; width: 70px; margin: 10px;}
         .folder-grid .desktop-icon .icon-img { text-shadow: none; font-size: 35px;}
-        .folder-grid .desktop-icon:active .icon-title { background: var(--win-title); color: white; border: 1px dotted black; }
         
         /* Forms */
         input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
@@ -134,7 +125,6 @@
 <body>
 
     <div id="contextMenu"></div>
-
     <div id="desktop"></div>
 
     <div id="startMenu">
@@ -152,7 +142,6 @@
         <div id="customAlert" class="window" style="min-height: auto; height: auto; width: 300px;">
             <div class="title-bar">
                 <span id="alertTitle">Message</span>
-                <!-- ဒီနေရာတွင် win-btn close ဟု ပြောင်းပေးပါ -->
                 <button class="win-btn close" onclick="closeAlert()"></button>
             </div>
             <div style="padding: 20px; background: var(--win-bg); display: block;">
@@ -193,7 +182,6 @@
         let globalZIndex = 100; 
         let windowOffset = 0;   
 
-        // --- Wallpaper ချိန်းရန် Helper Function ---
         function applyBackground(bgVal) {
             bgVal = bgVal || '#008080';
             if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
@@ -205,19 +193,19 @@
                 document.body.style.backgroundPosition = 'center';
             } else {
                 document.body.style.background = bgVal;
-                document.body.style.backgroundImage = 'none'; // အရောင်ပြောင်းလျှင် ပုံဟောင်းဖျက်ရန်
+                document.body.style.backgroundImage = 'none';
             }
         }
 
-        // --- Custom Right-Click Context Menu ---
         document.addEventListener('contextmenu', (e) => {
-            e.preventDefault(); // Browser မူလ Menu ကို ပိတ်မည်
+            e.preventDefault();
             const ctx = document.getElementById('contextMenu');
             ctx.innerHTML = ''; 
 
-            // Admin သတ်မှတ်ထားသော Menu မရှိလျှင် Default ပြမည်
             let menuItems = osConfig.contextMenu || [
                 { label: "🔄 Refresh", action: "refresh" },
+                { type: "divider" },
+                { label: "🔲 Auto Arrange Icons", action: "auto_arrange" },
                 { type: "divider" },
                 { label: "ℹ️ System Info", action: "sysinfo" }
             ];
@@ -234,7 +222,6 @@
                     div.onclick = () => {
                         if(item.action === 'refresh') window.location.reload();
                         else if(item.action === 'sysinfo') customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        // ဤနေရာတွင် Icon များကို ရှင်းလင်းပြီး မူလအတိုင်းပြန်ထားမည့် Auto Arrange ကို ထည့်ပါသည်
                         else if(item.action === 'auto_arrange') {
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
@@ -246,64 +233,46 @@
             });
 
             ctx.style.display = 'flex';
-            
-            // Menu သည် Screen အပြင်သို့ မရောက်သွားစေရန် ထိန်းချုပ်ခြင်း
             let x = e.clientX; let y = e.clientY;
             if (x + ctx.offsetWidth > window.innerWidth) x -= ctx.offsetWidth;
             if (y + ctx.offsetHeight > window.innerHeight) y -= ctx.offsetHeight;
-            
             ctx.style.left = x + 'px';
             ctx.style.top = y + 'px';
         });
 
-        // နေရာလွတ်ကို ကလစ်နှိပ်လိုက်လျှင် Menu ကို ပြန်ဖျောက်မည်
         document.addEventListener('click', (e) => {
             if(e.button !== 2) document.getElementById('contextMenu').style.display = 'none';
         });
 
-        // --- Smart Caching စနစ်ဖြင့် Desktop ကို ဖွင့်ခြင်း ---
         async function loadDesktop() {
-            // ၁။ LocalStorage (Cache) မှ အရင်ဆုံး ချက်ချင်းဆွဲယူပြသခြင်း (0.1s Instant Load)
             const cachedConfigStr = localStorage.getItem('os_config_cache');
             if (cachedConfigStr) {
                 try {
                     osConfig = JSON.parse(cachedConfigStr);
                     applyBackground(osConfig.wallpaper);
                     renderDesktopItems(osConfig.items, document.getElementById('desktop'));
-                } catch(e) { console.error("Cache parsing error"); }
+                } catch(e) {}
             }
 
-            // ၂။ နောက်ကွယ်မှနေ၍ Database (Server) သို့ လှမ်း၍ အသစ်စစ်ဆေးခြင်း
             try {
                 const res = await fetch('/api/get-config');
                 let freshData = await res.json();
-                
-                // Array အဟောင်းပုံစံဖြစ်နေလျှင် Object အသစ်ပုံစံသို့ ပြောင်းပေးခြင်း
                 if(Array.isArray(freshData)) { 
                     freshData = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: freshData }; 
                 }
 
-                // ၃။ Database နှင့် Cache မတူညီမှသာ UI ကို အသစ်ပြန်ပြောင်းပေးခြင်း
                 if (JSON.stringify(freshData) !== cachedConfigStr) {
                     osConfig = freshData;
-                    
-                    // Cache နှင့် Wallpaper ကို အသစ်သိမ်းမည်
                     localStorage.setItem('os_config_cache', JSON.stringify(osConfig));
                     localStorage.setItem('os_wallpaper', osConfig.wallpaper || '#008080');
-                    
-                    // UI ကို Fresh Data ဖြင့် Update လုပ်မည်
                     applyBackground(osConfig.wallpaper);
                     renderDesktopItems(osConfig.items, document.getElementById('desktop'));
                 }
-            } catch(e) {
-                console.warn("Offline or Server Error. Loading from cache seamlessly.");
-            }
+            } catch(e) {}
         }
 
         function renderDesktopItems(itemsArray, container) {
             container.innerHTML = ''; 
-            
-            // သိမ်းဆည်းထားသော Icon နေရာများကို ပြန်ခေါ်ခြင်း
             let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
             let defaultTop = 20;
             let defaultLeft = 20;
@@ -313,24 +282,21 @@
                 div.className = 'desktop-icon';
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
-                // နေရာသတ်မှတ်ခြင်း (သိမ်းထားသည့်နေရာရှိပါက ၎င်းနေရာ၌ ထားမည်၊ မရှိပါက အစီအစဉ်အတိုင်း စီပေးမည်)
                 if (positions[item.id]) {
                     div.style.top = positions[item.id].top;
                     div.style.left = positions[item.id].left;
                 } else {
                     div.style.top = defaultTop + 'px';
                     div.style.left = defaultLeft + 'px';
-                    defaultTop += 100; // နောက်ထပ် Icon အတွက် အောက်သို့ဆင်းမည်
+                    defaultTop += 100;
                     if (defaultTop > window.innerHeight - 150) {
                         defaultTop = 20;
-                        defaultLeft += 100; // နေရာမလောက်ပါက ညာဘက်သို့ ရွှေ့မည်
+                        defaultLeft += 100;
                     }
                 }
 
-                // Drag & Drop Function ကို Icon သို့ ချိတ်ဆက်ခြင်း
                 makeIconDraggable(div, item.id);
                 
-                // Double Click / Tap (ဖွင့်ရန်) - (Drag ဆွဲနေစဉ် ဖွင့်ခြင်းကို ကာကွယ်ထားသည်)
                 div.ondblclick = () => {
                     if (div.dataset.dragging !== "true") openItem(item);
                 };
@@ -373,7 +339,7 @@
                 if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
                     isDragging = true;
                     elmnt.dataset.dragging = "true";
-                    elmnt.style.zIndex = 1000; // Drag လုပ်နေစဉ် အပေါ်ဆုံးရောက်နေစေရန်
+                    elmnt.style.zIndex = 1000;
                 }
 
                 if (isDragging) {
@@ -384,7 +350,6 @@
                     let newTop = elmnt.offsetTop - p2;
                     let newLeft = elmnt.offsetLeft - p1;
 
-                    // (၁) မျက်နှာပြင် အပြင်ဘက်သို့ မထွက်သွားစေရန် ဘောင် (Boundaries) သတ်မှတ်ခြင်း
                     const taskbarHeight = 35;
                     const maxTop = window.innerHeight - elmnt.offsetHeight - taskbarHeight;
                     const maxLeft = window.innerWidth - elmnt.offsetWidth;
@@ -406,65 +371,26 @@
                 if (isDragging) {
                     elmnt.style.zIndex = ""; 
 
-                    // (၂) လွှတ်လိုက်ချိန်တွင် Grid ပုံစံ နေရာကျသွားစေရန် တွက်ချက်ခြင်း (100x100 Grid System)
                     let currentTop = parseInt(elmnt.style.top);
                     let currentLeft = parseInt(elmnt.style.left);
                     
-                    // Base position 20px ကို အခြေခံ၍ Grid ချမည်
                     let snappedTop = Math.round((currentTop - 20) / 100) * 100 + 20;
                     let snappedLeft = Math.round((currentLeft - 20) / 100) * 100 + 20;
 
-                    // Grid ချပြီးနောက် ဘောင်အပြင်ပြန်ရောက်မသွားအောင် ထပ်စစ်ခြင်း
                     const taskbarHeight = 35;
                     const maxTop = window.innerHeight - elmnt.offsetHeight - taskbarHeight;
                     const maxLeft = window.innerWidth - elmnt.offsetWidth;
                     
                     if (snappedTop < 20) snappedTop = 20;
                     if (snappedLeft < 20) snappedLeft = 20;
-                    if (snappedTop > maxTop) snappedTop = Math.floor((maxTop - 20) / 100) * 100 + 20;
-                    if (snappedLeft > maxLeft) snappedLeft = Math.floor((maxLeft - 20) / 100) * 100 + 20;
+                    if (snappedTop > maxTop) snappedTop = Math.max(20, Math.floor((maxTop - 20) / 100) * 100 + 20);
+                    if (snappedLeft > maxLeft) snappedLeft = Math.max(20, Math.floor((maxLeft - 20) / 100) * 100 + 20);
 
-                    // Grid တိတိကျကျဖြစ်သွားသော နေရာသို့ ချပေးမည်
                     elmnt.style.top = snappedTop + "px";
                     elmnt.style.left = snappedLeft + "px";
 
                     setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
                     
-                    // ရောက်သွားသော Grid နေရာကို Local Storage တွင် Auto မှတ်သိမ်းပေးမည်
-                    let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
-                    positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
-                    localStorage.setItem('icon_positions', JSON.stringify(positions));
-                }
-            }
-        }
-            function dragMove(e) {
-                let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
-                let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
-
-                // ကလစ်ရိုးရိုး နှိပ်တာလား၊ ဖိဆွဲတာလား ခွဲခြားခြင်း (၅ Pixel ထက်ကျော်မှ Drag ဟုသတ်မှတ်မည်)
-                if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
-                    isDragging = true;
-                    elmnt.dataset.dragging = "true";
-                }
-
-                if (isDragging) {
-                    e.preventDefault();
-                    p1 = p3 - clientX; p2 = p4 - clientY;
-                    p3 = clientX; p4 = clientY;
-                    elmnt.style.top = (elmnt.offsetTop - p2) + "px";
-                    elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
-                }
-            }
-
-            function dragEnd() {
-                document.onmouseup = null; document.onmousemove = null;
-                document.ontouchend = null; document.ontouchmove = null;
-
-                if (isDragging) {
-                    // Drag အဆုံးသတ်ပြီး 0.1 စက္ကန့်ကြာမှ Dragging အခြေအနေကို ပိတ်မည် (Double Click မှားမဝင်စေရန်)
-                    setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
-                    
-                    // ရောက်သွားသော နေရာကို Local Storage တွင် Auto မှတ်သိမ်းပေးမည်
                     let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
                     positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
                     localStorage.setItem('icon_positions', JSON.stringify(positions));
@@ -473,14 +399,11 @@
         }
 
         function openItem(item) {
-            //if(item.type === 'link') { window.open(item.url, '_blank'); return; }
-
             const winId = 'win_' + Math.random().toString(36).substr(2, 9);
             const win = document.createElement('div');
             win.className = 'window';
             win.id = winId;
             
-            // Folder ဆိုရင် History မှတ်မယ်
             if(item.type === 'folder') win.folderHistory = [item];
 
             let offsetXY = (windowOffset % 10) * 20;
@@ -491,7 +414,6 @@
             win.onmousedown = () => focusWindow(winId);
             win.ontouchstart = () => focusWindow(winId);
 
-            // Breadcrumb Address Bar ပြရန် Toolbar (အဖြူရောင်နောက်ခံ) ထည့်သွင်းခြင်း
             win.innerHTML = `
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
@@ -560,17 +482,12 @@
                 const toolbar = document.getElementById(`toolbar_${winId}`);
                 if(toolbar && winNode.folderHistory) {
                     toolbar.style.display = 'block';
-                    
-                    // Breadcrumb Path (အဆင့်ဆင့်) တည်ဆောက်ခြင်း
                     let pathHtml = '';
                     winNode.folderHistory.forEach((histItem, idx) => {
                         if (idx > 0) pathHtml += ' <span style="color:#888; font-size:11px; margin: 0 4px;">▶</span> ';
-                        
                         if (idx === winNode.folderHistory.length - 1) {
-                            // လက်ရှိရောက်နေတဲ့ Folder (နှိပ်လို့မရ)
                             pathHtml += `<span style="font-weight:bold; color:black;">${histItem.title}</span>`;
                         } else {
-                            // အနောက်ပြန်ဆုတ်ချင်တဲ့ Folder (နှိပ်လို့ရ)
                             pathHtml += `<span style="cursor:pointer; color:var(--win-title);" 
                                 onmouseover="this.style.textDecoration='underline'" 
                                 onmouseout="this.style.textDecoration='none'" 
@@ -579,65 +496,34 @@
                     });
                     toolbar.innerHTML = pathHtml;
                 }
-            }
-
-            else if (item.type === 'link') {
+            } else if (item.type === 'link') {
                 const url = item.url || '';
                 const lowerUrl = url.toLowerCase();
                 let contentHtml = '';
 
-                // (၁) Photo (ပုံ)
                 if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp)([\?#].*)?$/i)) {
-                    contentHtml = `
-                    <div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box; overflow: hidden;">
-                        <img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #555; box-shadow: 2px 2px 10px rgba(0,0,0,0.8);">
-                    </div>`;
-                } 
-                // (၂) Video
-                else if (lowerUrl.match(/\.(mp4|webm|ogg)([\?#].*)?$/i)) {
-                    contentHtml = `
-                    <div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box; overflow: hidden;">
-                        <video controls autoplay style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #555; box-shadow: 2px 2px 10px rgba(0,0,0,0.8);">
-                            <source src="${url}" type="video/mp4">
-                        </video>
-                    </div>`;
-                } 
-                // (၃) YouTube
-                else if (lowerUrl.includes('youtube.com/watch') || lowerUrl.includes('youtu.be/')) {
+                    contentHtml = `<div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box; overflow: hidden;"><img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #555;"></div>`;
+                } else if (lowerUrl.match(/\.(mp4|webm|ogg)([\?#].*)?$/i)) {
+                    contentHtml = `<div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box; overflow: hidden;"><video controls autoplay style="max-width: 100%; max-height: 100%; object-fit: contain;"><source src="${url}" type="video/mp4"></video></div>`;
+                } else if (lowerUrl.includes('youtube.com/watch') || lowerUrl.includes('youtu.be/')) {
                     let videoId = '';
                     if(url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
                     else if (url.includes('v=')) videoId = new URL(url).searchParams.get('v');
-                    
-                    contentHtml = `
-                    <div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box;">
-                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                    </div>`;
-                } 
-                // (၄) Iframe
-                else {
-                    contentHtml = `
-                    <div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;">
-                        <div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;">
-                            <a href="${url}" target="_blank" style="color: blue; text-decoration: none;"><b>🌍 Iframe အလုပ်မလုပ်ပါက ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a>
-                        </div>
-                        <iframe src="${url}" style="width: 100%; flex: 1; border: none; overflow: auto;"></iframe>
-                    </div>`;
+                    contentHtml = `<div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+                } else {
+                    contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;"><a href="${url}" target="_blank" style="color: blue;"><b>🌍 ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a></div><iframe src="${url}" style="width: 100%; flex: 1; border: none;"></iframe></div>`;
                 }
                 contentArea.innerHTML = contentHtml;
             }
-          
         }
 
         function jumpToHistory(winId, index) {
             const winNode = document.getElementById(winId);
             if (winNode && winNode.folderHistory) {
-                // ရွေးချယ်လိုက်တဲ့ အဆင့်အထိပဲ History ကို ဖြတ်ယူမယ်
                 winNode.folderHistory = winNode.folderHistory.slice(0, index + 1);
-                const targetItem = winNode.folderHistory[index];
-                renderWindowContent(winId, targetItem);
+                renderWindowContent(winId, winNode.folderHistory[index]);
             }
         }
-        
 
         function renderFolderItems(itemsArray, container, winId) {
             container.innerHTML = ''; 
@@ -645,26 +531,17 @@
                 const div = document.createElement('div');
                 div.className = 'desktop-icon';
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
-                
                 div.ondblclick = () => handleFolderItemClick(item, winId);
-                let lastTap = 0;
-                div.addEventListener('touchend', (e) => {
-                    const ct = new Date().getTime();
-                    if (ct - lastTap < 500 && ct - lastTap > 0) { handleFolderItemClick(item, winId); e.preventDefault(); }
-                    lastTap = ct;
-                });
                 container.appendChild(div);
             });
         }
 
         function handleFolderItemClick(item, winId) {
             if(item.type === 'folder') {
-                // Folder ဆိုရင် လက်ရှိ Window ထဲမှာပဲ Navigation လုပ်မယ်
                 const winNode = document.getElementById(winId);
                 winNode.folderHistory.push(item);
                 renderWindowContent(winId, item);
             } else {
-                // File/App ဆိုရင် Window အသစ် ခွဲဖွင့်မယ်
                 openItem(item);
             }
         }
@@ -690,7 +567,6 @@
         function maximizeWindow(winId) {
             const win = document.getElementById(winId);
             if(!win) return;
-            
             if(win.classList.contains('maximized')) {
                 win.classList.remove('maximized'); 
             } else {
@@ -703,15 +579,13 @@
             const win = document.getElementById(winId);
             if(!win) return;
             if(win.style.display === 'none') {
-                // Minimize ဖြစ်နေလျှင် ပြန်ဖော်မည်
                 win.style.display = 'flex';
                 focusWindow(winId);
             } else {
-                // လက်ရှိ မျက်နှာပြင်ပေါ် ရောက်နေလျှင် (Active ဖြစ်နေလျှင် Minimize လုပ်မည်)
                 if (win.style.zIndex == globalZIndex) {
                     minimizeWindow(winId);
                 } else {
-                    focusWindow(winId); // Active မဖြစ်လျှင် ရှေ့ဆုံးသို့ ဆွဲထုတ်မည်
+                    focusWindow(winId);
                 }
             }
         }
@@ -763,6 +637,18 @@
                 document.onmouseup = dragEnd; document.onmousemove = dragMove;
                 document.ontouchend = dragEnd; document.ontouchmove = dragMove;
             }
+            function dragMove(e) {
+                if(e.type === "touchmove") {
+                    p1 = p3 - e.touches[0].clientX; p2 = p4 - e.touches[0].clientY;
+                    p3 = e.touches[0].clientX; p4 = e.touches[0].clientY;
+                } else {
+                    e.preventDefault();
+                    p1 = p3 - e.clientX; p2 = p4 - e.clientY; p3 = e.clientX; p4 = e.clientY;
+                }
+                elmnt.style.top = (elmnt.offsetTop - p2) + "px"; elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+            }
+            function dragEnd() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
+        }
 
         function makeResizable(win) {
             const edges = ['r', 'b', 'br', 'l', 't', 'tr', 'bl', 'tl'];
