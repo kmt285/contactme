@@ -85,8 +85,10 @@
         
         /* Inside Folder Icons */
         .folder-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-        .folder-grid .desktop-icon { color: black; width: 70px; margin: 10px;}
-        .folder-grid .desktop-icon .icon-img { text-shadow: none; font-size: 35px;}
+        .folder-grid .folder-icon { color: black; width: 70px; margin: 10px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+        .folder-grid .folder-icon .icon-img { text-shadow: none; font-size: 35px; display: block; margin-bottom: 5px; }
+        .folder-grid .folder-icon .icon-title { font-size: 13px; padding: 2px 4px; word-break: break-word; }
+        .folder-grid .folder-icon:active .icon-title { background: var(--win-title); color: white; border: 1px dotted black; }
         
         /* Forms */
         input[type="text"], textarea { width: 100%; box-sizing: border-box; background: #fff; border: inset 2px; padding: 6px; font-family: monospace; font-size: 14px; margin-bottom: 10px; outline: none;}
@@ -220,16 +222,14 @@
                     div.className = 'ctx-item';
                     div.innerHTML = item.label;
                     div.onclick = () => {
-                        // Action သို့မဟုတ် URL ကို သေချာခွဲခြားခြင်း
                         if (item.action === 'refresh') {
                             window.location.reload();
                         } else if (item.action === 'sysinfo') {
                             customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        } else if(item.action === 'auto_arrange') {
+                        } else if (item.action === 'auto_arrange') {
                             localStorage.removeItem('icon_positions_desktop');
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
-                        }
                         } else if (item.url) {
                             window.open(item.url, '_blank');
                         }
@@ -279,8 +279,6 @@
 
         function renderDesktopItems(itemsArray, container) {
             container.innerHTML = ''; 
-            
-            // Desktop အတွက် သီးသန့် Key ကို သုံးမည်
             let positions = JSON.parse(localStorage.getItem('icon_positions_desktop') || '{}');
             let defaultTop = 20;
             let defaultLeft = 20;
@@ -303,7 +301,7 @@
                     }
                 }
 
-                makeIconDraggable(div, item.id, 'icon_positions_desktop'); // Key နာမည်ကို ထည့်ပေးပါ
+                makeIconDraggable(div, item.id, 'icon_positions_desktop');
                 
                 div.ondblclick = () => {
                     if (div.dataset.dragging !== "true") openItem(item);
@@ -392,14 +390,13 @@
                     if (snappedTop < 20) snappedTop = 20;
                     if (snappedLeft < 20) snappedLeft = 20;
                     if (snappedTop > maxTop) snappedTop = Math.max(20, Math.floor((maxTop - 20) / 100) * 100 + 20);
-                    if (snappedLeft > maxLeft) snappedLeft = Math.max(20, Math.floor((maxLeft - 20) / 100) * 100 + 20;
+                    if (snappedLeft > maxLeft) snappedLeft = Math.max(20, Math.floor((maxLeft - 20) / 100) * 100 + 20);
 
                     elmnt.style.top = snappedTop + "px";
                     elmnt.style.left = snappedLeft + "px";
 
                     setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
                     
-                    // သက်ဆိုင်ရာ Storage Key ထဲတွင်သာ သီးသန့်သိမ်းဆည်းမည်
                     let positions = JSON.parse(localStorage.getItem(storageKey) || '{}');
                     positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
                     localStorage.setItem(storageKey, JSON.stringify(positions));
@@ -538,9 +535,7 @@
             container.innerHTML = ''; 
             (itemsArray || []).forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'desktop-icon';
-                // Folder ထဲတွင် absolute သုံးစရာမလိုဘဲ Grid အတိုင်း ပုံမှန်ပေါ်စေရန် position ကို static ဟု သတ်မှတ်ပေးသည်
-                div.style.position = 'static'; 
+                div.className = 'folder-icon'; // Desktop နဲ့ မရောစေရန် သီးသန့် Class သုံးထားသည်
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
                 div.ondblclick = () => handleFolderItemClick(item, winId);
