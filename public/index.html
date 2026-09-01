@@ -33,7 +33,10 @@
         /* Draggable & Resizable Window */
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; min-width: 250px; min-height: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: none; flex-direction: column; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; }
-        .close-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-weight: bold; padding: 1px 6px; cursor: pointer; font-size: 12px;}
+        .window-controls { display: flex; gap: 2px; }
+        .win-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-weight: bold; padding: 1px 6px; cursor: pointer; font-size: 12px; }
+        .win-btn:active { border: inset 2px; padding: 2px 5px 0px 7px; }
+        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
         .close-btn:active { border: inset 2px; }
         .window-content { padding: 0; font-size: 14px; background: var(--win-bg); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 
@@ -217,7 +220,11 @@
             win.innerHTML = `
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
-                    <button class="close-btn" onclick="closeWindow('${winId}')">X</button>
+                    <div class="window-controls">
+                        <button class="win-btn" onclick="minimizeWindow('${winId}'); event.stopPropagation();">_</button>
+                        <button class="win-btn" id="maxBtn_${winId}" onclick="maximizeWindow('${winId}'); event.stopPropagation();">□</button>
+                        <button class="win-btn" onclick="closeWindow('${winId}'); event.stopPropagation();">X</button>
+                    </div>
                 </div>
                 <div style="background: #fff; padding: 5px 8px; display:none; border-bottom: inset 2px; font-size:13px; font-family: sans-serif;" id="toolbar_${winId}">
                 </div>
@@ -398,18 +405,41 @@
             if(tbItem) tbItem.classList.add('active');
         }
 
+        function minimizeWindow(winId) {
+            const win = document.getElementById(winId);
+            if(win) win.style.display = 'none';
+            const tbItem = document.getElementById(`tb_${winId}`);
+            if(tbItem) tbItem.classList.remove('active');
+        }
+
+        function maximizeWindow(winId) {
+            const win = document.getElementById(winId);
+            const maxBtn = document.getElementById(`maxBtn_${winId}`);
+            if(!win) return;
+            
+            if(win.classList.contains('maximized')) {
+                win.classList.remove('maximized'); // Restore ပြန်လုပ်မည်
+                maxBtn.innerText = '□';
+            } else {
+                win.classList.add('maximized'); // Full screen ချဲ့မည်
+                maxBtn.innerText = '❐';
+            }
+            focusWindow(winId);
+        }
+
         function toggleWindow(winId) {
             const win = document.getElementById(winId);
             if(!win) return;
             if(win.style.display === 'none') {
+                // Minimize ဖြစ်နေလျှင် ပြန်ဖော်မည်
+                win.style.display = 'flex';
                 focusWindow(winId);
             } else {
+                // လက်ရှိ မျက်နှာပြင်ပေါ် ရောက်နေလျှင် (Active ဖြစ်နေလျှင် Minimize လုပ်မည်)
                 if (win.style.zIndex == globalZIndex) {
-                    win.style.display = 'none';
-                    const tbItem = document.getElementById(`tb_${winId}`);
-                    if(tbItem) tbItem.classList.remove('active');
+                    minimizeWindow(winId);
                 } else {
-                    focusWindow(winId);
+                    focusWindow(winId); // Active မဖြစ်လျှင် ရှေ့ဆုံးသို့ ဆွဲထုတ်မည်
                 }
             }
         }
@@ -454,6 +484,7 @@
 
             function dragStart(e) {
                 if (window.innerWidth <= 500) return; 
+                if (elmnt.classList.contains('maximized')) return;
                 focusWindow(elmnt.id);
                 if(e.type === "touchstart") { p3 = e.touches[0].clientX; p4 = e.touches[0].clientY; } 
                 else { p3 = e.clientX; p4 = e.clientY; e.preventDefault(); }
