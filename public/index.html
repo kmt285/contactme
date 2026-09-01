@@ -9,11 +9,11 @@
         body { margin: 0; padding: 0; background-color: var(--os-bg); font-family: 'MS Sans Serif', Tahoma, sans-serif; overflow: hidden; user-select: none; }
         
         /* Desktop Icons */
-        #desktop { padding: 20px; display: flex; flex-direction: column; flex-wrap: wrap; gap: 25px; align-content: flex-start; height: calc(100vh - 50px); }
-        .desktop-icon { width: 80px; text-align: center; cursor: pointer; color: white; display: flex; flex-direction: column; align-items: center;}
+        #desktop { padding: 0; position: relative; width: 100%; height: calc(100vh - 35px); overflow: hidden; }
+        .desktop-icon { width: 80px; text-align: center; cursor: pointer; color: white; display: flex; flex-direction: column; align-items: center; position: absolute; user-select: none; }
         .desktop-icon:active .icon-title { background: var(--win-title); border: 1px dotted white; }
-        .icon-img { font-size: 40px; display: block; margin-bottom: 5px; text-shadow: 2px 2px 3px rgba(0,0,0,0.7); }
-        .icon-title { font-size: 13px; padding: 2px 4px; display: inline-block; word-break: break-word;}
+        .icon-img { font-size: 40px; display: block; margin-bottom: 5px; text-shadow: 2px 2px 3px rgba(0,0,0,0.7); pointer-events: none; }
+        .icon-title { font-size: 13px; padding: 2px 4px; display: inline-block; word-break: break-word; pointer-events: none; }
 
         /* Taskbar & Start Menu */
         #taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--win-bg); border-top: 2px solid var(--win-border-light); display: flex; align-items: center; padding: 0 5px; box-sizing: border-box; z-index: 100000; }
@@ -297,14 +297,42 @@
 
         function renderDesktopItems(itemsArray, container) {
             container.innerHTML = ''; 
+            
+            // သိမ်းဆည်းထားသော Icon နေရာများကို ပြန်ခေါ်ခြင်း
+            let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
+            let defaultTop = 20;
+            let defaultLeft = 20;
+
             (itemsArray || []).forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'desktop-icon';
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
-                div.ondblclick = () => openItem(item);
+                // နေရာသတ်မှတ်ခြင်း (သိမ်းထားသည့်နေရာရှိပါက ၎င်းနေရာ၌ ထားမည်၊ မရှိပါက အစီအစဉ်အတိုင်း စီပေးမည်)
+                if (positions[item.id]) {
+                    div.style.top = positions[item.id].top;
+                    div.style.left = positions[item.id].left;
+                } else {
+                    div.style.top = defaultTop + 'px';
+                    div.style.left = defaultLeft + 'px';
+                    defaultTop += 100; // နောက်ထပ် Icon အတွက် အောက်သို့ဆင်းမည်
+                    if (defaultTop > window.innerHeight - 150) {
+                        defaultTop = 20;
+                        defaultLeft += 100; // နေရာမလောက်ပါက ညာဘက်သို့ ရွှေ့မည်
+                    }
+                }
+
+                // Drag & Drop Function ကို Icon သို့ ချိတ်ဆက်ခြင်း
+                makeIconDraggable(div, item.id);
+                
+                // Double Click / Tap (ဖွင့်ရန်) - (Drag ဆွဲနေစဉ် ဖွင့်ခြင်းကို ကာကွယ်ထားသည်)
+                div.ondblclick = () => {
+                    if (div.dataset.dragging !== "true") openItem(item);
+                };
+                
                 let lastTap = 0;
                 div.addEventListener('touchend', (e) => {
+                    if (div.dataset.dragging === "true") return;
                     const ct = new Date().getTime();
                     if (ct - lastTap < 500 && ct - lastTap > 0) { openItem(item); e.preventDefault(); }
                     lastTap = ct;
@@ -312,6 +340,60 @@
                 
                 container.appendChild(div);
             });
+        }
+
+        function makeIconDraggable(elmnt, itemId) {
+            let p1=0, p2=0, p3=0, p4=0;
+            let isDragging = false;
+            let startX, startY;
+
+            elmnt.onmousedown = dragStart;
+            elmnt.ontouchstart = dragStart;
+
+            function dragStart(e) {
+                isDragging = false;
+                elmnt.dataset.dragging = "false"; // Drag လုပ်နေသလား မှတ်သားရန်
+                if (e.type === "touchstart") { p3 = e.touches[0].clientX; p4 = e.touches[0].clientY; } 
+                else { p3 = e.clientX; p4 = e.clientY; }
+                startX = p3; startY = p4;
+
+                document.onmouseup = dragEnd; document.onmousemove = dragMove;
+                document.ontouchend = dragEnd; document.ontouchmove = dragMove;
+            }
+
+            function dragMove(e) {
+                let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+                let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+                // ကလစ်ရိုးရိုး နှိပ်တာလား၊ ဖိဆွဲတာလား ခွဲခြားခြင်း (၅ Pixel ထက်ကျော်မှ Drag ဟုသတ်မှတ်မည်)
+                if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
+                    isDragging = true;
+                    elmnt.dataset.dragging = "true";
+                }
+
+                if (isDragging) {
+                    e.preventDefault();
+                    p1 = p3 - clientX; p2 = p4 - clientY;
+                    p3 = clientX; p4 = clientY;
+                    elmnt.style.top = (elmnt.offsetTop - p2) + "px";
+                    elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+                }
+            }
+
+            function dragEnd() {
+                document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
+
+                if (isDragging) {
+                    // Drag အဆုံးသတ်ပြီး 0.1 စက္ကန့်ကြာမှ Dragging အခြေအနေကို ပိတ်မည် (Double Click မှားမဝင်စေရန်)
+                    setTimeout(() => { elmnt.dataset.dragging = "false"; }, 100); 
+                    
+                    // ရောက်သွားသော နေရာကို Local Storage တွင် Auto မှတ်သိမ်းပေးမည်
+                    let positions = JSON.parse(localStorage.getItem('icon_positions') || '{}');
+                    positions[itemId] = { top: elmnt.style.top, left: elmnt.style.left };
+                    localStorage.setItem('icon_positions', JSON.stringify(positions));
+                }
+            }
         }
 
         function openItem(item) {
