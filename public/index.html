@@ -220,13 +220,16 @@
                     div.className = 'ctx-item';
                     div.innerHTML = item.label;
                     div.onclick = () => {
-                        if(item.action === 'refresh') window.location.reload();
-                        else if(item.action === 'sysinfo') customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        else if(item.action === 'auto_arrange') {
+                        if(item.action === 'refresh') {
+                            window.location.reload();
+                        } else if(item.action === 'sysinfo') {
+                            customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
+                        } else if(item.action === 'auto_arrange') {
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
+                        } else if(item.url) {
+                            window.open(item.url, '_blank');
                         }
-                        else if(item.url) window.open(item.url, '_blank');
                     };
                     ctx.appendChild(div);
                 }
