@@ -269,14 +269,18 @@
                 const div = document.createElement('div');
                 div.className = 'tree-node';
                 
-                let titleHtml = `<span><span class="drag-handle">☰</span> ${item.icon} <b>${item.title}</b> <small style="color:#666;">(${item.type})</small></span>`;
-                let controlsHtml = `
+                // HTML အပိုင်းကိုသာ အရင်ထည့်သွင်းမည်
+                div.innerHTML = `
+                    <span><span class="drag-handle">☰</span> ${item.icon} <b>${item.title}</b> <small style="color:#666;">(${item.type})</small></span>
                     <div style="float: right; display: flex; gap: 5px;">
-                        <button class="btn-sm" onclick="promptAddItem(guiConfig.items, ${index}, parentArray)">✏️ Edit</button>
-                        <button class="btn-sm" onclick="deleteItem(${index}, parentArray)">🗑️ Del</button>
+                        <button class="btn-sm btn-edit">✏️ Edit</button>
+                        <button class="btn-sm btn-del">🗑️ Del</button>
                     </div>
                 `;
-                div.innerHTML = titleHtml + controlsHtml;
+
+                // ခလုတ်များ၏ Click Event များကို လုံခြုံစွာ သီးသန့်ချိတ်ဆက်မည်
+                div.querySelector('.btn-edit').onclick = () => promptAddItem(parentArray, index, parentArray);
+                div.querySelector('.btn-del').onclick = () => deleteItem(index, parentArray);
 
                 if (item.type === 'folder') {
                     if(!item.children) item.children = [];
