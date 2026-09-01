@@ -763,18 +763,6 @@
                 document.onmouseup = dragEnd; document.onmousemove = dragMove;
                 document.ontouchend = dragEnd; document.ontouchmove = dragMove;
             }
-            function dragMove(e) {
-                if(e.type === "touchmove") {
-                    p1 = p3 - e.touches[0].clientX; p2 = p4 - e.touches[0].clientY;
-                    p3 = e.touches[0].clientX; p4 = e.touches[0].clientY;
-                } else {
-                    e.preventDefault();
-                    p1 = p3 - e.clientX; p2 = p4 - e.clientY; p3 = e.clientX; p4 = e.clientY;
-                }
-                elmnt.style.top = (elmnt.offsetTop - p2) + "px"; elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
-            }
-            function dragEnd() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
-        }
 
         function makeResizable(win) {
             const edges = ['r', 'b', 'br', 'l', 't', 'tr', 'bl', 'tl'];
