@@ -185,20 +185,9 @@
         let globalZIndex = 100; 
         let windowOffset = 0;   
 
-        async function loadDesktop() {
-            try {
-                const res = await fetch('/api/get-config');
-                let data = await res.json();
-                if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
-                osConfig = data;
-                
-                localStorage.setItem('os_wallpaper', osConfig.wallpaper || '#008080');
-
-            } catch(e) {
-                console.error("Config Loading Error");
-            }
-
-            let bgVal = osConfig.wallpaper || '#008080';
+        // --- Wallpaper ချိန်းရန် Helper Function ---
+        function applyBackground(bgVal) {
+            bgVal = bgVal || '#008080';
             if ((bgVal.startsWith('http') || bgVal.includes('.jpg') || bgVal.includes('.png')) && !bgVal.startsWith('url(')) {
                 bgVal = `url('${bgVal}')`;
             }
@@ -208,9 +197,47 @@
                 document.body.style.backgroundPosition = 'center';
             } else {
                 document.body.style.background = bgVal;
+                document.body.style.backgroundImage = 'none'; // အရောင်ပြောင်းလျှင် ပုံဟောင်းဖျက်ရန်
+            }
+        }
+
+        // --- Smart Caching စနစ်ဖြင့် Desktop ကို ဖွင့်ခြင်း ---
+        async function loadDesktop() {
+            // ၁။ LocalStorage (Cache) မှ အရင်ဆုံး ချက်ချင်းဆွဲယူပြသခြင်း (0.1s Instant Load)
+            const cachedConfigStr = localStorage.getItem('os_config_cache');
+            if (cachedConfigStr) {
+                try {
+                    osConfig = JSON.parse(cachedConfigStr);
+                    applyBackground(osConfig.wallpaper);
+                    renderDesktopItems(osConfig.items, document.getElementById('desktop'));
+                } catch(e) { console.error("Cache parsing error"); }
             }
 
-            renderDesktopItems(osConfig.items, document.getElementById('desktop'));
+            // ၂။ နောက်ကွယ်မှနေ၍ Database (Server) သို့ လှမ်း၍ အသစ်စစ်ဆေးခြင်း
+            try {
+                const res = await fetch('/api/get-config');
+                let freshData = await res.json();
+                
+                // Array အဟောင်းပုံစံဖြစ်နေလျှင် Object အသစ်ပုံစံသို့ ပြောင်းပေးခြင်း
+                if(Array.isArray(freshData)) { 
+                    freshData = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: freshData }; 
+                }
+
+                // ၃။ Database နှင့် Cache မတူညီမှသာ UI ကို အသစ်ပြန်ပြောင်းပေးခြင်း
+                if (JSON.stringify(freshData) !== cachedConfigStr) {
+                    osConfig = freshData;
+                    
+                    // Cache နှင့် Wallpaper ကို အသစ်သိမ်းမည်
+                    localStorage.setItem('os_config_cache', JSON.stringify(osConfig));
+                    localStorage.setItem('os_wallpaper', osConfig.wallpaper || '#008080');
+                    
+                    // UI ကို Fresh Data ဖြင့် Update လုပ်မည်
+                    applyBackground(osConfig.wallpaper);
+                    renderDesktopItems(osConfig.items, document.getElementById('desktop'));
+                }
+            } catch(e) {
+                console.warn("Offline or Server Error. Loading from cache seamlessly.");
+            }
         }
 
         function renderDesktopItems(itemsArray, container) {
