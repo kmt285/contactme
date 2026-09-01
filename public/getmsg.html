@@ -294,10 +294,12 @@
                 if(!res.ok) { area.innerHTML = ""; return showMessage("Error", "Wrong Password!"); }
                 const msgs = await res.json();
                 if(msgs.length === 0) return area.innerHTML = "No new messages.";
-                area.innerHTML = msgs.reverse().map(m => `
+                
+                // MongoDB ကလာတဲ့ id နဲ့ date ကို ပြောင်းလဲအသုံးပြုထားသည်
+                area.innerHTML = msgs.map(m => `
                     <div class="msg-card">
-                        <button onclick="promptDeleteMsg('${m.name}', '${m.sha}')" style="float:right; color:#900; font-size:11px;">Delete</button>
-                        <small style="color: #555;"><b>${m.name.replace('msg_','').replace('.txt','').replace(/-/g, ':')}</b></small>
+                        <button onclick="promptDeleteMsg('${m.id}')" style="float:right; color:#900; font-size:11px;">Delete</button>
+                        <small style="color: #555;"><b>${new Date(m.date).toLocaleString()}</b></small>
                         <hr style="border:0; border-top:1px solid #ccc; margin:8px 0;">
                         <pre style="margin: 0; white-space: pre-wrap; word-break:break-word; font-family:sans-serif;">${m.content}</pre>
                     </div>
@@ -305,15 +307,20 @@
             } catch(e) { area.innerHTML = ""; showMessage("Error", "Network connection failed."); }
         }
 
-        function promptDeleteMsg(name, sha) {
+        function promptDeleteMsg(id) {
             customConfirm("Are you sure you want to delete this message?", "Delete Message", () => {
-                deleteMsg(name, sha);
+                deleteMsg(id);
             });
         }
 
-        async function deleteMsg(filename, sha) {
+        async function deleteMsg(id) {
             const pass = document.getElementById('adminPass').value;
-            await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminPassword: pass, filename, sha }) });
+            await fetch('/api/delete', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                // MongoDB _id ကို Parameter အနေဖြင့် လှမ်းပို့သည်
+                body: JSON.stringify({ adminPassword: pass, id: id }) 
+            });
             fetchMessages();
         }
 
