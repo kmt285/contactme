@@ -87,6 +87,8 @@
                 <b>Background (Color or Image URL):</b>
                 <input type="text" id="guiWallpaper" placeholder="e.g., #008080 or url('image.jpg')">
                 <b>System Info (Start Menu):</b>
+                <b style="display:block; margin-top:10px;">Right-Click Menu (Format: Name | url/action သို့မဟုတ် ---):</b>
+                <textarea id="guiContextMenu" rows="4" placeholder="🔄 Refresh | refresh&#10;---&#10;ℹ️ System Info | sysinfo&#10;🌍 My Facebook | https://facebook.com/..."></textarea>
                 <textarea id="guiSysInfo" rows="3" placeholder="Enter system info here..."></textarea>
             </div>
 
@@ -421,14 +423,49 @@
             closeModal(); refreshGUI();
         }
 
-        // Config Syncing
         function syncJSONtoGUI() {
-            try { guiConfig = JSON.parse(document.getElementById('configEditor').value); refreshGUI(); } 
-            catch(e) { }
+            try { 
+                guiConfig = JSON.parse(document.getElementById('configEditor').value); 
+                
+                // Context Menu ကို Textarea အတွက် ပြန်ပြောင်းခြင်း
+                if (guiConfig.contextMenu) {
+                    document.getElementById('guiContextMenu').value = guiConfig.contextMenu.map(m => {
+                        if(m.type === 'divider') return '---';
+                        if(m.action) return `${m.label} | ${m.action}`;
+                        if(m.url) return `${m.label} | ${m.url}`;
+                        return '';
+                    }).join('\n');
+                } else {
+                    document.getElementById('guiContextMenu').value = "🔄 Refresh | refresh\n---\nℹ️ System Info | sysinfo";
+                }
+                
+                refreshGUI(); 
+            } catch(e) { }
         }
+
         function syncGUItoJSON() {
             guiConfig.wallpaper = document.getElementById('guiWallpaper').value;
             guiConfig.systemInfo = document.getElementById('guiSysInfo').value;
+            
+            // Textarea မှ Context Menu ကို ပြန်လည်သိမ်းဆည်းခြင်း
+            const ctxLines = document.getElementById('guiContextMenu').value.split('\n');
+            guiConfig.contextMenu = [];
+            ctxLines.forEach(line => {
+                const txt = line.trim();
+                if(txt === '---') { 
+                    guiConfig.contextMenu.push({ type: 'divider' }); 
+                } else if(txt.includes('|')) {
+                    const parts = txt.split('|');
+                    const label = parts[0].trim();
+                    const actionOrUrl = parts[1].trim();
+                    if(actionOrUrl === 'refresh' || actionOrUrl === 'sysinfo') {
+                        guiConfig.contextMenu.push({ label, action: actionOrUrl });
+                    } else {
+                        guiConfig.contextMenu.push({ label, url: actionOrUrl });
+                    }
+                }
+            });
+
             document.getElementById('configEditor').value = JSON.stringify(guiConfig, null, 4);
         }
 
