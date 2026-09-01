@@ -49,9 +49,9 @@
             border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); 
         }
         
-        /* 1. Minimize Icon (_) ကို CSS ဖြင့်ဆွဲခြင်း */
-        .win-btn.min::before { content: ''; position: absolute; bottom: 4px; left: 4px; width: 10px; height: 2px; background: #000; }
-        .win-btn.min:active::before { bottom: 3px; left: 5px; }
+        /* 1. Minimize Icon ကို Center တွင် ညီညီညာညာ ထားရန် */
+        .win-btn.min::before { content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 2px; background: #000; transform: translate(-50%, -50%); }
+        .win-btn.min:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)); }
         
         /* 2. Maximize Icon (□) ကို CSS ဖြင့်ဆွဲခြင်း */
         .win-btn.max::before { content: ''; position: absolute; top: 4px; left: 4px; width: 10px; height: 9px; border: 1px solid #000; border-top: 2px solid #000; box-sizing: border-box; }
