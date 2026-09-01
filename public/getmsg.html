@@ -33,22 +33,38 @@
     </style>
 </head>
 <body>
+
+    <!-- Login Screen Overlay -->
+    <div id="loginScreen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--os-bg); display:flex; justify-content:center; align-items:center; z-index:9999;">
+        <div class="modal-box" style="position:relative; transform:none; top:0; left:0; width:300px;">
+            <div class="title-bar">🔐 Admin Login</div>
+            <div style="padding: 20px;">
+                <input type="password" id="loginPass" placeholder="🔑 Enter Password" style="margin-bottom: 15px;">
+                <button onclick="performLogin()" style="width: 100%;">Login</button>
+                <p id="loginErr" style="color:red; font-size:13px; text-align:center; display:none; margin-top:10px; font-weight:bold;">Incorrect Password!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Title bar တွင် Logout ခလုတ်ထည့်သွင်းခြင်း -->
+        <div class="title-bar" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>⚙️ OS Control Panel</span>
+            <button onclick="performLogout()" style="background:var(--win-bg); border:outset 2px; padding:2px 8px; font-size:11px; cursor:pointer;">Logout</button>
+        </div>
+        
     <div class="container">
         <div class="title-bar">⚙️ OS Control Panel</div>
-        
-        <div style="padding: 10px; background: #dfdfdf; border: inset 2px; margin-bottom: 15px; display: flex; gap: 10px;">
-            <input type="password" id="adminPass" placeholder="🔑 Enter Admin Password" style="margin: 0; flex: 1;">
-        </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('messages')">✉️ Messages</div>
-            <div class="tab" onclick="switchTab('desktopGUI')">🖥️ Desktop GUI</div>
-            <div class="tab" onclick="switchTab('desktopCode')">👨‍💻 JSON Code</div>
+            <div class="tab active" onclick="switchTab('messages')">Messages</div>
+            <div class="tab" onclick="switchTab('desktopGUI')">Desktop GUI</div>
+            <div class="tab" onclick="switchTab('desktopCode')">JSON Code</div>
         </div>
 
         <!-- Messages Tab -->
         <div id="messages" class="tab-content active">
-            <button onclick="fetchMessages()" style="width: 100%; margin-bottom: 15px;">📥 Load Messages</button>
+            <button onclick="fetchMessages()" style="width: 100%; margin-bottom: 15px;">Load Messages</button>
             <div id="messagesArea" style="font-size: 14px;"></div>
         </div>
 
@@ -56,7 +72,7 @@
         <div id="desktopGUI" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <b style="font-size: 15px;">Visual Desktop Manager</b>
-                <button onclick="saveGUIConfig()" style="background: var(--win-title); color: white;">💾 Save Changes</button>
+                <button onclick="saveGUIConfig()" style="background: var(--win-title); color: white;">Save Changes</button>
             </div>
             
             <div style="background: #fff; border: inset 2px; padding: 10px; margin-bottom: 15px;">
@@ -98,6 +114,103 @@
         let guiConfig = { wallpaper: "#008080", systemInfo: "", items: [] };
         let activeArrayTarget = null; 
         let editItemTarget = null;
+
+        // --- JWT Authentication Flow ---
+        let adminToken = sessionStorage.getItem('authToken');
+        
+        // Page စဖွင့်ဖွင့်ချင်း Token ရှိမရှိ စစ်ဆေးခြင်း
+        if(adminToken) {
+            document.getElementById('loginScreen').style.display = 'none';
+        }
+
+        async function performLogin() {
+            const pass = document.getElementById('loginPass').value;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pass })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    adminToken = data.token;
+                    sessionStorage.setItem('authToken', adminToken);
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('loginErr').style.display = 'none';
+                    document.getElementById('loginPass').value = '';
+                    fetchMessages(); // Login ဝင်တာနဲ့ Message တန်းဆွဲမည်
+                } else {
+                    document.getElementById('loginErr').style.display = 'block';
+                }
+            } catch(e) {
+                alert("Network Error during login.");
+            }
+        }
+
+        function performLogout() {
+            sessionStorage.removeItem('authToken');
+            adminToken = null;
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        // Token ကို API တိုင်းမှာ Header ကနေ ပို့ပေးမည့် Helper Function
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            };
+        }
+
+        // --- Data Fetching with JWT ---
+        async function saveToServer() {
+            try {
+                const res = await fetch('/api/save-config', {
+                    method: 'POST', 
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ configData: guiConfig }) // adminPassword ထည့်ပို့စရာမလိုတော့ပါ
+                });
+                if(res.ok) showMessage("Success", "Desktop Updated Successfully!");
+                else {
+                    if(res.status === 401 || res.status === 403) return performLogout(); // Token သက်တမ်းကုန်လျှင် Logout လုပ်မည်
+                    showMessage("Error", "Failed to save.");
+                }
+            } catch (e) { showMessage("Error", "Network error."); }
+        }
+
+        async function fetchMessages() {
+            const area = document.getElementById('messagesArea'); 
+            area.innerHTML = "Loading...";
+            try {
+                // Method ကို POST အစား GET သို့ ပြောင်းထားသည်
+                const res = await fetch('/api/get-messages', {
+                    method: 'GET', 
+                    headers: getAuthHeaders()
+                });
+                
+                if(res.status === 401 || res.status === 403) return performLogout();
+                
+                const msgs = await res.json();
+                if(msgs.length === 0) return area.innerHTML = "No new messages.";
+                
+                area.innerHTML = msgs.map(m => `
+                    <div class="msg-card">
+                        <button onclick="promptDeleteMsg('${m.id}')" style="float:right; color:#900; font-size:11px;">Delete</button>
+                        <small style="color: #555;"><b>${new Date(m.date).toLocaleString()}</b></small>
+                        <hr style="border:0; border-top:1px solid #ccc; margin:8px 0;">
+                        <pre style="margin: 0; white-space: pre-wrap; word-break:break-word; font-family:sans-serif;">${m.content}</pre>
+                    </div>
+                `).join('');
+            } catch(e) { area.innerHTML = ""; showMessage("Error", "Network connection failed."); }
+        }
+
+        async function deleteMsg(id) {
+            await fetch('/api/delete', { 
+                method: 'POST', 
+                headers: getAuthHeaders(), 
+                body: JSON.stringify({ id: id }) 
+            });
+            fetchMessages();
+        }
 
         function showMessage(title, msg) {
             document.getElementById('modalTitle').innerText = title;
@@ -260,19 +373,6 @@
         async function saveGUIConfig() { syncGUItoJSON(); await saveToServer(); }
         async function saveRawConfig() { syncJSONtoGUI(); await saveToServer(); }
 
-        async function saveToServer() {
-            const pass = document.getElementById('adminPass').value;
-            if(!pass) return showMessage("Error", "Enter Admin Password!");
-            try {
-                const res = await fetch('/api/save-config', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminPassword: pass, configData: guiConfig })
-                });
-                if(res.ok) showMessage("Success", "Desktop Updated Successfully!");
-                else showMessage("Error", "Failed or Wrong Password.");
-            } catch (e) { showMessage("Error", "Network error."); }
-        }
-
         async function loadConfig() {
             const res = await fetch('/api/get-config');
             let data = await res.json();
@@ -281,31 +381,6 @@
             syncJSONtoGUI();
         }
 
-        // Messages
-        async function fetchMessages() {
-            const pass = document.getElementById('adminPass').value;
-            if(!pass) return showMessage("Error", "Enter Admin Password!");
-            const area = document.getElementById('messagesArea'); area.innerHTML = "Loading...";
-            try {
-                const res = await fetch('/api/get-messages', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminPassword: pass })
-                });
-                if(!res.ok) { area.innerHTML = ""; return showMessage("Error", "Wrong Password!"); }
-                const msgs = await res.json();
-                if(msgs.length === 0) return area.innerHTML = "No new messages.";
-                
-                // MongoDB ကလာတဲ့ id နဲ့ date ကို ပြောင်းလဲအသုံးပြုထားသည်
-                area.innerHTML = msgs.map(m => `
-                    <div class="msg-card">
-                        <button onclick="promptDeleteMsg('${m.id}')" style="float:right; color:#900; font-size:11px;">Delete</button>
-                        <small style="color: #555;"><b>${new Date(m.date).toLocaleString()}</b></small>
-                        <hr style="border:0; border-top:1px solid #ccc; margin:8px 0;">
-                        <pre style="margin: 0; white-space: pre-wrap; word-break:break-word; font-family:sans-serif;">${m.content}</pre>
-                    </div>
-                `).join('');
-            } catch(e) { area.innerHTML = ""; showMessage("Error", "Network connection failed."); }
-        }
 
         function promptDeleteMsg(id) {
             customConfirm("Are you sure you want to delete this message?", "Delete Message", () => {
@@ -313,16 +388,6 @@
             });
         }
 
-        async function deleteMsg(id) {
-            const pass = document.getElementById('adminPass').value;
-            await fetch('/api/delete', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                // MongoDB _id ကို Parameter အနေဖြင့် လှမ်းပို့သည်
-                body: JSON.stringify({ adminPassword: pass, id: id }) 
-            });
-            fetchMessages();
-        }
 
         loadConfig();
     </script>
