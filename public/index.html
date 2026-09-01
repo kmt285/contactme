@@ -30,6 +30,12 @@
         .start-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: black; }
         .start-item:hover { background: var(--win-title); color: white; }
 
+        /* Context Menu Styles */
+        #contextMenu { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); box-shadow: 3px 3px 5px rgba(0,0,0,0.5); z-index: 999999; display: none; flex-direction: column; min-width: 150px; padding: 2px; }
+        .ctx-item { padding: 5px 15px; cursor: pointer; font-size: 13px; color: black; display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+        .ctx-item:hover { background: var(--win-title); color: white; }
+        .ctx-divider { height: 0; border-top: 1px solid #808080; border-bottom: 1px solid #fff; margin: 3px 2px; }
+
         /* Draggable & Resizable Window */
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; min-width: 250px; min-height: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: none; flex-direction: column; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; }
@@ -127,6 +133,8 @@
 </head>
 <body>
 
+    <div id="contextMenu"></div>
+
     <div id="desktop"></div>
 
     <div id="startMenu">
@@ -200,6 +208,53 @@
                 document.body.style.backgroundImage = 'none'; // အရောင်ပြောင်းလျှင် ပုံဟောင်းဖျက်ရန်
             }
         }
+
+        // --- Custom Right-Click Context Menu ---
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // Browser မူလ Menu ကို ပိတ်မည်
+            const ctx = document.getElementById('contextMenu');
+            ctx.innerHTML = ''; 
+
+            // Admin သတ်မှတ်ထားသော Menu မရှိလျှင် Default ပြမည်
+            let menuItems = osConfig.contextMenu || [
+                { label: "🔄 Refresh", action: "refresh" },
+                { type: "divider" },
+                { label: "ℹ️ System Info", action: "sysinfo" }
+            ];
+
+            menuItems.forEach(item => {
+                if(item.type === 'divider') {
+                    const div = document.createElement('div');
+                    div.className = 'ctx-divider';
+                    ctx.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'ctx-item';
+                    div.innerHTML = item.label;
+                    div.onclick = () => {
+                        if(item.action === 'refresh') window.location.reload();
+                        else if(item.action === 'sysinfo') customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
+                        else if(item.url) window.open(item.url, '_blank');
+                    };
+                    ctx.appendChild(div);
+                }
+            });
+
+            ctx.style.display = 'flex';
+            
+            // Menu သည် Screen အပြင်သို့ မရောက်သွားစေရန် ထိန်းချုပ်ခြင်း
+            let x = e.clientX; let y = e.clientY;
+            if (x + ctx.offsetWidth > window.innerWidth) x -= ctx.offsetWidth;
+            if (y + ctx.offsetHeight > window.innerHeight) y -= ctx.offsetHeight;
+            
+            ctx.style.left = x + 'px';
+            ctx.style.top = y + 'px';
+        });
+
+        // နေရာလွတ်ကို ကလစ်နှိပ်လိုက်လျှင် Menu ကို ပြန်ဖျောက်မည်
+        document.addEventListener('click', (e) => {
+            if(e.button !== 2) document.getElementById('contextMenu').style.display = 'none';
+        });
 
         // --- Smart Caching စနစ်ဖြင့် Desktop ကို ဖွင့်ခြင်း ---
         async function loadDesktop() {
