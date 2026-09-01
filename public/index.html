@@ -198,7 +198,7 @@
         }
 
         document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
+            e.preventDefault(); 
             const ctx = document.getElementById('contextMenu');
             ctx.innerHTML = ''; 
 
@@ -220,14 +220,15 @@
                     div.className = 'ctx-item';
                     div.innerHTML = item.label;
                     div.onclick = () => {
-                        if(item.action === 'refresh') {
+                        // Action သို့မဟုတ် URL ကို သေချာခွဲခြားခြင်း
+                        if (item.action === 'refresh') {
                             window.location.reload();
-                        } else if(item.action === 'sysinfo') {
+                        } else if (item.action === 'sysinfo') {
                             customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        } else if(item.action === 'auto_arrange') {
+                        } else if (item.action === 'auto_arrange' || (item.url && item.url.includes('auto_arrange'))) {
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
-                        } else if(item.url) {
+                        } else if (item.url) {
                             window.open(item.url, '_blank');
                         }
                     };
@@ -242,7 +243,7 @@
             ctx.style.left = x + 'px';
             ctx.style.top = y + 'px';
         });
-
+        
         document.addEventListener('click', (e) => {
             if(e.button !== 2) document.getElementById('contextMenu').style.display = 'none';
         });
