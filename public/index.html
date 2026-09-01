@@ -41,34 +41,35 @@
             border-left: 2px solid var(--win-border-light); 
             border-right: 2px solid var(--win-border-dark); 
             border-bottom: 2px solid var(--win-border-dark); 
-            font-weight: bold; 
-            cursor: pointer; 
-            width: 22px; 
-            height: 22px; 
-            padding: 0; 
-            margin: 0; 
-            color: #000; 
-            position: relative; 
-            box-sizing: border-box; 
-        }
-        .win-btn span { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            font-size: 13px; 
-            font-family: sans-serif;
-            pointer-events: none; /* စာလုံးကိုနှိပ်မိခြင်းမှ ကာကွယ်ရန် */
+            cursor: pointer; width: 22px; height: 22px; 
+            padding: 0; margin: 0; position: relative; box-sizing: border-box; 
         }
         .win-btn:active { 
-            border-top: 2px solid var(--win-border-dark); 
-            border-left: 2px solid var(--win-border-dark); 
-            border-right: 2px solid var(--win-border-light); 
-            border-bottom: 2px solid var(--win-border-light); 
+            border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); 
+            border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); 
         }
-        .win-btn:active span { 
-            transform: translate(calc(-50% + 1px), calc(-50% + 1px)); 
-        }
+        
+        /* 1. Minimize Icon (_) ကို CSS ဖြင့်ဆွဲခြင်း */
+        .win-btn.min::before { content: ''; position: absolute; bottom: 4px; left: 4px; width: 10px; height: 2px; background: #000; }
+        .win-btn.min:active::before { bottom: 3px; left: 5px; }
+        
+        /* 2. Maximize Icon (□) ကို CSS ဖြင့်ဆွဲခြင်း */
+        .win-btn.max::before { content: ''; position: absolute; top: 4px; left: 4px; width: 10px; height: 9px; border: 1px solid #000; border-top: 2px solid #000; box-sizing: border-box; }
+        .win-btn.max:active::before { top: 5px; left: 5px; }
+        
+        /* 3. Restore Icon (❐) ကို CSS ဖြင့်ဆွဲခြင်း (Maximized ဖြစ်နေချိန်) */
+        .window.maximized .win-btn.max::before { width: 8px; height: 7px; top: 6px; left: 4px; }
+        .window.maximized .win-btn.max::after { content: ''; position: absolute; width: 8px; height: 7px; border: 1px solid #000; border-top: 2px solid #000; top: 3px; left: 7px; box-sizing: border-box; }
+        .window.maximized .win-btn.max:active::before { top: 7px; left: 5px; }
+        .window.maximized .win-btn.max:active::after { top: 4px; left: 8px; }
+
+        /* 4. Close Icon (X) ကို CSS ဖြင့်ဆွဲခြင်း */
+        .win-btn.close::before, .win-btn.close::after { content: ''; position: absolute; top: 50%; left: 50%; width: 11px; height: 1.5px; background: #000; }
+        .win-btn.close::before { transform: translate(-50%, -50%) rotate(45deg); }
+        .win-btn.close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+        .win-btn.close:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)) rotate(45deg); }
+        .win-btn.close:active::after { transform: translate(calc(-50% + 1px), calc(-50% + 1px)) rotate(-45deg); }
+
         .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
         .close-btn:active { border: inset 2px; }
         .window-content { padding: 0; font-size: 14px; background: var(--win-bg); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
@@ -143,7 +144,8 @@
         <div id="customAlert" class="window" style="min-height: auto; height: auto; width: 300px;">
             <div class="title-bar">
                 <span id="alertTitle">Message</span>
-                <button class="close-btn" onclick="closeAlert()">X</button>
+                <!-- ဒီနေရာတွင် win-btn close ဟု ပြောင်းပေးပါ -->
+                <button class="win-btn close" onclick="closeAlert()"></button>
             </div>
             <div style="padding: 20px; background: var(--win-bg); display: block;">
                 <div id="alertMsg" style="margin-bottom: 25px; display: flex; justify-content: center; align-items: center; text-align: center; font-size: 14px; white-space: pre-wrap; line-height: 1.5;"></div>
@@ -254,10 +256,9 @@
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
                     <div class="window-controls">
-                        <!-- _ အောက်အရမ်းရောက်မနေစေရန် top: 40% ဖြင့် ချိန်ထားသည် -->
-                        <button class="win-btn" onclick="minimizeWindow('${winId}'); event.stopPropagation();"><span style="top: 40%;">_</span></button>
-                        <button class="win-btn" id="maxBtn_${winId}" onclick="maximizeWindow('${winId}'); event.stopPropagation();"><span>□</span></button>
-                        <button class="win-btn" onclick="closeWindow('${winId}'); event.stopPropagation();"><span>X</span></button>
+                        <button class="win-btn min" onclick="minimizeWindow('${winId}'); event.stopPropagation();"></button>
+                        <button class="win-btn max" id="maxBtn_${winId}" onclick="maximizeWindow('${winId}'); event.stopPropagation();"></button>
+                        <button class="win-btn close" onclick="closeWindow('${winId}'); event.stopPropagation();"></button>
                     </div>
                 </div>
                 <div style="background: #fff; padding: 5px 8px; display:none; border-bottom: inset 2px; font-size:13px; font-family: sans-serif;" id="toolbar_${winId}">
@@ -448,15 +449,12 @@
 
         function maximizeWindow(winId) {
             const win = document.getElementById(winId);
-            const maxBtn = document.getElementById(`maxBtn_${winId}`);
             if(!win) return;
             
             if(win.classList.contains('maximized')) {
-                win.classList.remove('maximized'); // Restore ပြန်လုပ်မည်
-                maxBtn.innerText = '□';
+                win.classList.remove('maximized'); 
             } else {
-                win.classList.add('maximized'); // Full screen ချဲ့မည်
-                maxBtn.innerText = '❐';
+                win.classList.add('maximized'); 
             }
             focusWindow(winId);
         }
