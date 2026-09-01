@@ -34,7 +34,7 @@
         .window { position: absolute; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); width: 450px; min-width: 250px; min-height: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: none; flex-direction: column; }
         .title-bar { background: var(--win-title); color: #fff; padding: 4px 6px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; }
         /* Window Controls & Maximized State */
-        .window-controls { display: flex; gap: 2px; align-items: center; }
+        .window-controls { display: flex; gap: 3px; align-items: center; }
         .win-btn { 
             background: var(--win-bg); 
             border-top: 2px solid var(--win-border-light); 
@@ -43,25 +43,31 @@
             border-bottom: 2px solid var(--win-border-dark); 
             font-weight: bold; 
             cursor: pointer; 
-            font-size: 13px; 
             width: 22px; 
             height: 22px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
             padding: 0; 
-            padding-bottom: 2px; /* _ (Minimize) အောက်မရောက်သွားစေရန် */
-            color: #000;
-            box-sizing: border-box;
+            margin: 0; 
+            color: #000; 
+            position: relative; 
+            box-sizing: border-box; 
+        }
+        .win-btn span { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 13px; 
+            font-family: sans-serif;
+            pointer-events: none; /* စာလုံးကိုနှိပ်မိခြင်းမှ ကာကွယ်ရန် */
         }
         .win-btn:active { 
             border-top: 2px solid var(--win-border-dark); 
             border-left: 2px solid var(--win-border-dark); 
             border-right: 2px solid var(--win-border-light); 
             border-bottom: 2px solid var(--win-border-light); 
-            padding-top: 2px; 
-            padding-left: 2px; 
-            padding-bottom: 0;
+        }
+        .win-btn:active span { 
+            transform: translate(calc(-50% + 1px), calc(-50% + 1px)); 
         }
         .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
         .close-btn:active { border: inset 2px; }
@@ -248,9 +254,10 @@
                 <div class="title-bar" id="header_${winId}">
                     <span id="title_${winId}">${item.icon} ${item.title}</span>
                     <div class="window-controls">
-                        <button class="win-btn" onclick="minimizeWindow('${winId}'); event.stopPropagation();">_</button>
-                        <button class="win-btn" id="maxBtn_${winId}" onclick="maximizeWindow('${winId}'); event.stopPropagation();">□</button>
-                        <button class="win-btn" onclick="closeWindow('${winId}'); event.stopPropagation();">X</button>
+                        <!-- _ အောက်အရမ်းရောက်မနေစေရန် top: 40% ဖြင့် ချိန်ထားသည် -->
+                        <button class="win-btn" onclick="minimizeWindow('${winId}'); event.stopPropagation();"><span style="top: 40%;">_</span></button>
+                        <button class="win-btn" id="maxBtn_${winId}" onclick="maximizeWindow('${winId}'); event.stopPropagation();"><span>□</span></button>
+                        <button class="win-btn" onclick="closeWindow('${winId}'); event.stopPropagation();"><span>X</span></button>
                     </div>
                 </div>
                 <div style="background: #fff; padding: 5px 8px; display:none; border-bottom: inset 2px; font-size:13px; font-family: sans-serif;" id="toolbar_${winId}">
