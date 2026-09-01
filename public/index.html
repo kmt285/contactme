@@ -42,33 +42,17 @@
         
         /* Window Controls & Maximized State */
         .window-controls { display: flex; gap: 3px; align-items: center; }
-        .win-btn { 
-            background: var(--win-bg); 
-            border-top: 2px solid var(--win-border-light); 
-            border-left: 2px solid var(--win-border-light); 
-            border-right: 2px solid var(--win-border-dark); 
-            border-bottom: 2px solid var(--win-border-dark); 
-            cursor: pointer; width: 22px; height: 22px; 
-            padding: 0; margin: 0; position: relative; box-sizing: border-box; 
-        }
-        .win-btn:active { 
-            border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); 
-            border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); 
-        }
-        
+        .win-btn { background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); cursor: pointer; width: 22px; height: 22px; padding: 0; margin: 0; position: relative; box-sizing: border-box; }
+        .win-btn:active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
         .win-btn.min::before { content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 2px; background: #000; transform: translate(-50%, -50%); }
         .win-btn.min:active::before { transform: translate(calc(-50% + 1px), calc(-50% + 1px)); }
-        
         .win-btn.max::before { content: ''; position: absolute; top: 4px; left: 4px; width: 10px; height: 9px; border: 1px solid #000; border-top: 2px solid #000; box-sizing: border-box; }
         .win-btn.max:active::before { top: 5px; left: 5px; }
-        
         .window.maximized .win-btn.max::before { width: 8px; height: 7px; top: 6px; left: 4px; }
         .window.maximized .win-btn.max::after { content: ''; position: absolute; width: 8px; height: 7px; border: 1px solid #000; border-top: 2px solid #000; top: 3px; left: 7px; box-sizing: border-box; }
-        
         .win-btn.close::before, .win-btn.close::after { content: ''; position: absolute; top: 50%; left: 50%; width: 11px; height: 1.5px; background: #000; }
         .win-btn.close::before { transform: translate(-50%, -50%) rotate(45deg); }
         .win-btn.close::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
         .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100vh - 35px) !important; transform: none !important; }
         .window-content { padding: 0; font-size: 14px; background: var(--win-bg); flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 
@@ -110,16 +94,29 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             z-index: 9999999; display: flex; justify-content: center; align-items: center;
-            color: white; transition: opacity 0.5s ease;
+            color: white; 
+            transition: background 0.5s ease, opacity 0.5s ease;
         }
+
+        /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop Wallpaper ကို Blur လုပ်မည် */
+        #windows-boot-screen.login-mode {
+            background: rgba(0, 0, 0, 0.3); /* အနည်းငယ် မှောင်ပေးထားမည် */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
         #loading-view, #login-view {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%;
+            width: 100%; height: 100%; position: relative;
         }
         
         /* Loading Style */
-        .boot-logo { width: 150px; margin-bottom: 50px; }
+        .boot-logo { width: 150px; max-height: 150px; object-fit: contain; }
+        
+        /* Loading Spinner ကို အောက်ခြေသို့ ပို့ထားခြင်း */
         .windows-loader {
+            position: absolute;
+            bottom: 15%; /* အောက်ခြေမှ 15% အကွာတွင်ထားမည် */
             border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #0078D7;
             border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
@@ -165,14 +162,13 @@
     <div id="windows-boot-screen">
         <!-- Loading Screen -->
         <div id="loading-view">
-            <!-- Github ပေါ်က သင့် Logo URL ကို အောက်တွင်ထည့်ပါ -->
-            <img src="https://github.com/kmt285/contactme/logo.png" alt="Logo" class="boot-logo">
+            <!-- Github ပေါ်က Raw Image Link ကို မှန်ကန်စွာချိတ်ဆက်ထားပါသည် -->
+            <img src="https://raw.githubusercontent.com/kmt285/contactme/main/logo.png" alt="Logo" class="boot-logo">
             <div class="windows-loader"></div>
         </div>
         
         <!-- Login Screen -->
         <div id="login-view" style="display: none;">
-            <!-- User Icon နေရာတွင် ပုံပြောင်းချင်ပါက img tag သုံးနိုင်ပါသည် -->
             <div class="profile-pic">
                 <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
             </div>
@@ -216,7 +212,6 @@
     </div>
 
     <script>
-
         // --- New Boot Sequence JS ---
         const bootScreen = document.getElementById('windows-boot-screen');
         const loadingView = document.getElementById('loading-view');
@@ -224,37 +219,31 @@
         const signInBtn = document.getElementById('sign-in-btn');
         const win98Sound = document.getElementById('win98-sound');
 
-        // အရင်က Boot တက်ပြီးသားဆိုရင် Screen ကိုကျော်မည်
         if (sessionStorage.getItem('isBooted') === 'true') {
             bootScreen.style.display = 'none';
         } else {
-            // Website စဝင်ဝင်ချင်း Loading ပြမည်, ၃ စက္ကန့်ကြာရင် Login Screen ကိုပြောင်းမည်
             setTimeout(() => {
                 loadingView.style.display = 'none';
                 loginView.style.display = 'flex';
+                // Wallpaper ကို ဝါး(Blur) ပြီးပြရန် class အသစ်ထည့်မည်
+                bootScreen.classList.add('login-mode');
             }, 3000); 
 
-            // Sign In နှိပ်လိုက်လျှင်
             signInBtn.addEventListener('click', () => {
-                signInBtn.innerText = "Welcome..."; // စာသားပြောင်းမည်
                 signInBtn.style.background = "rgba(255, 255, 255, 0.3)";
                 
-                // ၁ စက္ကန့်ကြာပြီးနောက် Screen ကို မှိန်ပြီးပျောက်သွားစေမည်
+                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out စလုပ်မည်
+                bootScreen.style.opacity = '0';
+                
                 setTimeout(() => {
-                    bootScreen.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        bootScreen.style.display = 'none';
-                        if(win98Sound) win98Sound.play().catch(e => console.log("Audio play blocked"));
-                        sessionStorage.setItem('isBooted', 'true'); // နောက်တစ်ခါ Reload လုပ်ရင် မပြတော့အောင် သိမ်းထားမည်
-                    }, 500); // 0.5 စက္ကန့် (Opacity transition time)
-                    
-                }, 1000); // 1 စက္ကန့် fake loading အချိန်
+                    bootScreen.style.display = 'none';
+                    if(win98Sound) win98Sound.play().catch(e => console.log("Audio play blocked"));
+                    sessionStorage.setItem('isBooted', 'true');
+                }, 500); 
             });
         }
         // -----------------------------
 
-        
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
         function customAlert(message, title = "System Message") {
@@ -321,7 +310,6 @@
                     div.className = 'ctx-item';
                     div.innerHTML = item.label;
                     div.onclick = () => {
-                        // Action သို့မဟုတ် URL ကို တိကျစွာ ခွဲခြားစစ်ဆေးခြင်း
                         if (item.action === 'refresh') {
                             window.location.reload();
                         } else if (item.action === 'sysinfo') {
@@ -635,7 +623,7 @@
             container.innerHTML = ''; 
             (itemsArray || []).forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'folder-icon'; // Desktop နဲ့ မရောစေရန် သီးသန့် Class သုံးထားသည်
+                div.className = 'folder-icon'; 
                 div.innerHTML = `<span class="icon-img">${item.icon}</span><span class="icon-title">${item.title}</span>`;
                 
                 div.ondblclick = () => handleFolderItemClick(item, winId);
