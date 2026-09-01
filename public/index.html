@@ -105,12 +105,26 @@
             #desktop { gap: 15px; }
         }
 
-        /* --- Boot Sequence Styles --- */
-        #power-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999999; display: flex; justify-content: center; align-items: center; }
-        #power-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-right: 2px solid var(--win-border-dark); border-bottom: 2px solid var(--win-border-dark); font-family: 'MS Sans Serif', Tahoma, sans-serif; }
-        #power-btn:active { border-top: 2px solid var(--win-border-dark); border-left: 2px solid var(--win-border-dark); border-right: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-light); }
-        #bios-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999998; color: #c0c0c0; font-family: 'Courier New', Courier, monospace; font-size: 16px; padding: 20px; box-sizing: border-box; display: none; line-height: 1.5; overflow: hidden; }
-        /* ---------------------------- */
+        /* --- Realistic Boot Sequence Styles --- */
+        #power-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .power-btn-container { padding: 30px; background: #222; border-radius: 10px; border: 2px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center; }
+        #power-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: #d4d0c8; border-top: 3px solid #fff; border-left: 3px solid #fff; border-right: 3px solid #404040; border-bottom: 3px solid #404040; font-family: 'MS Sans Serif', Tahoma, sans-serif; color: #000; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px; margin: 0 auto; }
+        #power-btn:active { border-top: 3px solid #404040; border-left: 3px solid #404040; border-right: 3px solid #fff; border-bottom: 3px solid #fff; }
+        
+        #bios-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999998; color: #d3d3d3; font-family: 'Courier New', Courier, monospace; font-size: 17px; padding: 25px; box-sizing: border-box; display: none; line-height: 1.6; overflow: hidden; text-shadow: 0 0 2px rgba(211, 211, 211, 0.5); } /* CRT Glow Effect */
+        
+        /* Blinking Cursor Effect */
+        .cursor::after { content: '_'; animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* CRT Flash Transition Effect */
+        @keyframes crt-flash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(5) contrast(2); background: white; }
+            100% { filter: brightness(1); opacity: 0; }
+        }
+        .flash-effect { animation: crt-flash 0.4s ease-out forwards; }
+        /* -------------------------------------- */
     </style>
     <script>
         try {
@@ -136,11 +150,14 @@
     <body>
     <!-- --- Boot Sequence HTML --- -->
     <div id="power-screen">
-        <button id="power-btn">Turn On PC</button>
+        <div class="power-btn-container">
+            <h2 style="color: #666; margin-top: 0; font-family: sans-serif; font-size: 16px;">RETRO OS TERMINAL</h2>
+            <button id="power-btn">🔌 Turn On PC</button>
+        </div>
     </div>
 
     <div id="bios-screen">
-        <div id="bios-text"></div>
+        <div id="bios-text" style="display: inline;"></div><span class="cursor" id="bios-cursor"></span>
     </div>
 
     <audio id="win98-sound" src="https://www.myinstants.com/media/sounds/windows-98-startup.mp3"></audio>
@@ -177,54 +194,69 @@
 
     <script>
 
-        // --- Boot Sequence JS ---
+        // --- Realistic Boot Sequence JS ---
         const powerBtn = document.getElementById('power-btn');
         const powerScreen = document.getElementById('power-screen');
         const biosScreen = document.getElementById('bios-screen');
         const biosText = document.getElementById('bios-text');
+        const biosCursor = document.getElementById('bios-cursor');
         const win98Sound = document.getElementById('win98-sound');
 
-        const bootLines = [
-            "Award Modular BIOS v4.51PG, An Energy Star Ally",
-            "Copyright (C) 1984-1998, Award Software, Inc.",
-            "",
-            "PENTIUM-S CPU at 133MHz",
-            "Memory Test : 32768K OK",
-            "",
-            "Award Plug and Play BIOS Extension v1.0A",
-            "Initialize Plug and Play Cards...",
-            "PNP Init Completed",
-            "",
-            "Detecting IDE Primary Master ... WDC AC31600H",
-            "Detecting IDE Primary Slave  ... None",
-            "Detecting IDE Secondary Master ... CD-ROM Drive",
-            "Detecting IDE Secondary Slave  ... None",
-            "",
-            "Booting from Hard Disk...",
-            "Starting Retro OS..."
-        ];
-
-        powerBtn.addEventListener('click', () => {
-            // Power ခလုတ် နှိပ်လိုက်တာနဲ့ ခလုတ်မျက်နှာပြင်ကို ဖျောက်ပြီး BIOS အမည်းရောင်ကို ပြမယ်
+        // Refresh လုပ်ထားရင် Boot ပြန်မတက်အောင် စစ်ဆေးခြင်း
+        if (sessionStorage.getItem('isBooted') === 'true') {
             powerScreen.style.display = 'none';
-            biosScreen.style.display = 'block';
+            biosScreen.style.display = 'none';
+        } else {
+            // ပထမဆုံးအကြိမ် ဝင်ခြင်းဖြစ်ပါက Power ခလုတ် နှိပ်ရန် စောင့်မည်
+            powerBtn.addEventListener('click', async () => {
+                powerScreen.style.display = 'none';
+                biosScreen.style.display = 'block';
 
-            let currentLine = 0;
-            // စာကြောင်းတွေကို ၈၀ မီလီစက္ကန့်ခြားပြီး တစ်ကြောင်းချင်း အမြန်ပေါ်စေမယ်
-            const bootInterval = setInterval(() => {
-                if (currentLine < bootLines.length) {
-                    biosText.innerHTML += bootLines[currentLine] + "<br>";
-                    currentLine++;
-                } else {
-                    clearInterval(bootInterval);
-                    // စာတန်းတွေပြပြီး ၀.၅ စက္ကန့်အကြာမှာ BIOS Screen ကို ဖျောက်ပြီး အသံမြည်စေမယ်
-                    setTimeout(() => {
-                        biosScreen.style.display = 'none';
-                        win98Sound.play().catch(e => console.log("Audio play blocked by browser"));
-                    }, 500);
+                // Array ထဲတွင် စာကြောင်းနှင့် ထိုစာကြောင်းပေါ်လာရန် ကြန့်ကြာမည့်အချိန် (Delay - မီလီစက္ကန့်) ကို တွဲရေးထားသည်
+                const bootLines = [
+                    { text: "Award Modular BIOS v4.51PG, An Energy Star Ally", delay: 200 },
+                    { text: "Copyright (C) 1984-1998, Award Software, Inc.", delay: 300 },
+                    { text: "<br>", delay: 100 },
+                    { text: "PENTIUM-S CPU at 133MHz", delay: 200 },
+                    { text: "Memory Test : 32768K OK", delay: 1200 }, // Memory စစ်နေသကဲ့သို့ ပိုကြာကြာရပ်ထားမည်
+                    { text: "<br>", delay: 100 },
+                    { text: "Award Plug and Play BIOS Extension v1.0A", delay: 200 },
+                    { text: "Initialize Plug and Play Cards...", delay: 600 },
+                    { text: "PNP Init Completed", delay: 200 },
+                    { text: "<br>", delay: 100 },
+                    { text: "Detecting IDE Primary Master ... WDC AC31600H", delay: 400 },
+                    { text: "Detecting IDE Primary Slave  ... None", delay: 200 },
+                    { text: "Detecting IDE Secondary Master ... CD-ROM Drive", delay: 500 },
+                    { text: "Detecting IDE Secondary Slave  ... None", delay: 200 },
+                    { text: "<br>", delay: 100 },
+                    { text: "Booting from Hard Disk...", delay: 800 }, // OS ဆွဲတင်နေသကဲ့သို့ ရပ်ထားမည်
+                    { text: "Starting Retro OS...", delay: 800 }
+                ];
+
+                // Async/Await သုံးပြီး တစ်ကြောင်းချင်းစီကို သတ်မှတ်ထားသော Delay အတိုင်း ပေါ်စေမည်
+                for (let i = 0; i < bootLines.length; i++) {
+                    biosText.innerHTML += bootLines[i].text + (bootLines[i].text !== "<br>" ? "<br>" : "");
+                    // Promise ဖြင့် အချိန်ခဏရပ်ခြင်း (Sleep)
+                    await new Promise(resolve => setTimeout(resolve, bootLines[i].delay));
                 }
-            }, 80); 
-        });
+
+                // Blinking Cursor လေး ဖျောက်မည်
+                biosCursor.style.display = 'none';
+                
+                // Monitor ဖွင့်လိုက်သကဲ့သို့ အလင်းလက်သွားမည့် (Flash) Effect ထည့်မည်
+                biosScreen.classList.add('flash-effect');
+
+                // Flash လင်းသွားပြီးနောက် Desktop သို့ ဝင်မည်
+                setTimeout(() => {
+                    biosScreen.style.display = 'none';
+                    win98Sound.play().catch(e => console.log("Audio play blocked"));
+                    
+                    // နောက်တစ်ခါ Refresh လုပ်ရင် ထပ်မပေါ်စေရန် Session မှတ်ထားလိုက်မည်
+                    sessionStorage.setItem('isBooted', 'true');
+                }, 400); 
+            });
+        }
+        // ------------------------------------
 
         
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
