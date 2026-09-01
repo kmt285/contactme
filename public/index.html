@@ -249,8 +249,8 @@
 
             if(item.type === 'text') {
                 contentArea.innerHTML = `
-                    <div style="background: #fff; border: inset 2px; padding: 20px; margin: 8px; min-height: 200px; box-sizing: border-box;">
-                        <pre style="margin: 0; white-space: pre-wrap; font-family: 'MS Sans Serif', sans-serif; line-height: 1.5;">${item.content || ''}</pre>
+                    <div style="background: #fff; border: inset 2px; padding: 20px; margin: 8px; min-height: 200px; box-sizing: border-box; font-family: 'MS Sans Serif', sans-serif; line-height: 1.5; word-wrap: break-word;">
+                        ${item.content || ''}
                     </div>`;
                 
             } else if(item.type === 'app' && item.content === 'contact_form') {
