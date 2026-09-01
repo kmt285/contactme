@@ -222,11 +222,12 @@
                     div.className = 'ctx-item';
                     div.innerHTML = item.label;
                     div.onclick = () => {
+                        // Action သို့မဟုတ် URL ကို တိကျစွာ ခွဲခြားစစ်ဆေးခြင်း
                         if (item.action === 'refresh') {
                             window.location.reload();
                         } else if (item.action === 'sysinfo') {
                             customAlert(osConfig.systemInfo || 'System is running smoothly.', 'System Info');
-                        } else if (item.action === 'auto_arrange') {
+                        } else if (item.action === 'auto_arrange' || (item.url && item.url.includes('auto_arrange'))) {
                             localStorage.removeItem('icon_positions_desktop');
                             localStorage.removeItem('icon_positions');
                             window.location.reload();
