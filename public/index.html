@@ -100,7 +100,7 @@
 
         /* Login Mode ရောက်လျှင် Background အမည်းရောင်ဖျောက်ပြီး Desktop Wallpaper ကို Blur လုပ်မည် */
         #windows-boot-screen.login-mode {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.3); /* အနည်းငယ် မှောင်ပေးထားမည် */
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
         }
@@ -110,69 +110,32 @@
             width: 100%; height: 100%; position: relative;
         }
         
-        /* Logo Fade In Animation */
-        .boot-logo { 
-            width: 150px; max-height: 150px; object-fit: contain; 
-            opacity: 0;
-            animation: fadeInLogo 2s ease-in-out forwards;
-        }
-        @keyframes fadeInLogo {
-            0% { opacity: 0; transform: scale(0.9); }
-            100% { opacity: 1; transform: scale(1); }
-        }
+        /* Loading Style */
+        .boot-logo { width: 150px; max-height: 150px; object-fit: contain; }
         
-        /* Loading Spinner */
+        /* Loading Spinner ကို အောက်ခြေသို့ ပို့ထားခြင်း */
         .windows-loader {
             position: absolute;
-            bottom: 15%; 
+            bottom: 15%; /* အောက်ခြေမှ 15% အကွာတွင်ထားမည် */
             border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #0078D7;
             border-radius: 50%; width: 40px; height: 40px;
-            opacity: 0;
-            /* Spinner က Logo ပေါ်ပြီးမှ လင်းလာအောင် delay (1s) ထည့်ထားပါတယ် */
-            animation: spin 1s linear infinite, fadeInLoader 1s ease-in-out 1s forwards;
+            animation: spin 1s linear infinite;
         }
-        @keyframes fadeInLoader { to { opacity: 1; } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Login Style (Modern Layout + Retro Theme) */
+        /* Login Style */
         .profile-pic {
-            background: var(--win-bg); /* Retro မီးခိုးရောင် */
-            border: inset 3px; /* Retro အချိုင့်ပုံစံ */
-            border-radius: 50%; /* Modern အဝိုင်း */
-            width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 120px; height: 120px;
             display: flex; justify-content: center; align-items: center; margin-bottom: 20px;
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.5); /* Retro shadow */
         }
-        .profile-pic svg { fill: #000; } /* Icon ကို အမည်းရောင်ပြောင်းထားပါတယ် */
-
-        .profile-name { 
-            font-size: 28px; font-weight: bold; margin-bottom: 30px; letter-spacing: 1px;
-            color: white; 
-            text-shadow: 2px 2px 0px #000; /* Retro Pixel Shadow */
-            font-family: 'MS Sans Serif', Tahoma, sans-serif; /* Retro Font */
-        }
-
+        .profile-name { font-size: 28px; font-weight: 500; margin-bottom: 30px; letter-spacing: 1px;}
         #sign-in-btn {
-            background: var(--win-bg);
-            border-top: 2px solid var(--win-border-light); 
-            border-left: 2px solid var(--win-border-light); 
-            border-right: 2px solid var(--win-border-dark); 
-            border-bottom: 2px solid var(--win-border-dark);
-            color: black; font-family: 'MS Sans Serif', Tahoma, sans-serif;
-            padding: 8px 40px; font-size: 16px; font-weight: bold;
-            cursor: pointer; 
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white; padding: 10px 40px; font-size: 16px; border-radius: 4px;
+            cursor: pointer; transition: all 0.2s ease;
         }
-        #sign-in-btn:hover { background: #dfdfdf; }
-        #sign-in-btn:active { 
-            /* Button နှိပ်လိုက်ရင် အထဲဝင်သွားတဲ့ Effect */
-            border-top: 2px solid var(--win-border-dark); 
-            border-left: 2px solid var(--win-border-dark); 
-            border-right: 2px solid var(--win-border-light); 
-            border-bottom: 2px solid var(--win-border-light);
-            padding: 9px 39px 7px 41px; 
-            box-shadow: none;
-        }
+        #sign-in-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: white; }
+        #sign-in-btn:active { transform: scale(0.96); }
     </style>
     <script>
         try {
@@ -204,13 +167,13 @@
             <div class="windows-loader"></div>
         </div>
         
-        <!-- Login Screen (Modern Layout with Retro Colors) -->
+        <!-- Login Screen -->
         <div id="login-view" style="display: none;">
             <div class="profile-pic">
-                <svg viewBox="0 0 24 24" fill="inherit" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                <svg viewBox="0 0 24 24" fill="white" width="60" height="60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
             </div>
             <!-- အောက်တွင် သတ်မှတ်လိုသော Name ကို ပြင်ပါ -->
-            <div class="profile-name">User</div>
+            <div class="profile-name">Your Name</div>
             <button id="sign-in-btn">Sign in</button>
         </div>
     </div>
@@ -267,7 +230,9 @@
             }, 3000); 
 
             signInBtn.addEventListener('click', () => {
-                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out စလုပ်မည် (စာသားမပြောင်းတော့ပါ)
+                signInBtn.style.background = "rgba(255, 255, 255, 0.3)";
+                
+                // Button နှိပ်လိုက်သည်နှင့် ချက်ချင်း Fade-out စလုပ်မည်
                 bootScreen.style.opacity = '0';
                 
                 setTimeout(() => {
