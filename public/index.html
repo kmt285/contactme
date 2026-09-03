@@ -992,12 +992,22 @@
 
         // --- 3. Chat Listener (with coloring logic) ---
         window.initChatListener = function(winId) {
+            const msgBox = document.getElementById(`chatMessages_${winId}`);
+            
+            // 🚨 ပြင်ဆင်ချက် (၁): Listener နှစ်ခါပွားခြင်းကို တားဆီးရန်
+            if (!msgBox || msgBox.dataset.listening === "true") return; 
+            msgBox.dataset.listening = "true"; // ဖွင့်လိုက်ပြီဖြစ်ကြောင်း မှတ်သားထားမည်
+
             const sessionStartTime = Date.now(); 
             const chatRef = window.ref(window.db, 'global_chat');
             const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
-            const msgBox = document.getElementById(`chatMessages_${winId}`);
 
             window.onChildAdded(liveChatQuery, (snapshot) => {
+                const currentMsgBox = document.getElementById(`chatMessages_${winId}`);
+                
+                // 🚨 ပြင်ဆင်ချက် (၂): Window ပိတ်သွားပါက (X နှိပ်လိုက်ပါက) စာဆက်မထည့်ရန်
+                if (!currentMsgBox) return; 
+
                 const data = snapshot.val();
                 const d = new Date(data.timestamp || Date.now());
                 const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -1040,8 +1050,8 @@
                     <span style="color: ${textColor}; word-break: break-word; margin-left: 5px;">${safeMessage}</span>
                 `;
                 
-                msgBox.appendChild(msgDiv);
-                msgBox.scrollTop = msgBox.scrollHeight;
+                currentMsgBox.appendChild(msgDiv);
+                currentMsgBox.scrollTop = currentMsgBox.scrollHeight;
             });
         };
 
