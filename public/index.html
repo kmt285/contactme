@@ -616,30 +616,38 @@
 
             } else if(item.type === 'chat') {
                 contentArea.innerHTML = `
-                    <!-- 🔐 Login မျက်နှာပြင် -->
+                    <!-- Login Screen -->
                     <div id="chatLogin_${winId}" style="padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                        <h3 style="margin-top:0;">🔐 Chat Login</h3>
-                        <input type="text" id="loginUser_${winId}" placeholder="Username (e.g. aung285)" style="width: 220px; margin-bottom: 5px; text-align:center;">
-                        <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 220px; margin-bottom: 10px; text-align:center;">
-                        <button class="action-btn" style="width: 220px;" onclick="handleChatLogin('${winId}')">Enter</button>
-                        <div style="margin-top: 15px; font-size: 13px;">အကောင့်မရှိသေးဘူးလား? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Create Account</span></div>
+                        <h3 style="margin-top:0; margin-bottom: 20px;">System Login</h3>
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; height: 30px;">
+                                <span style="background: #dfdfdf; border: inset 2px; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="loginUser_${winId}" placeholder="username" style="flex: 1; margin-bottom: 0; box-sizing: border-box; height: 100%;">
+                            </div>
+                            <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 30px;">
+                            <button class="action-btn" style="width: 100%; margin-top: 5px; height: 32px;" onclick="handleChatLogin('${winId}')">Login</button>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 13px;">Don't have an account? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Sign Up</span></div>
                     </div>
 
-                    <!-- 📝 Signup မျက်နှာပြင် -->
+                    <!-- Signup Screen -->
                     <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                        <h3 style="margin-top:0;">📝 Create Account</h3>
-                        <input type="text" id="regDisplayName_${winId}" placeholder="Display Name (e.g. Aung Aung)" style="width: 220px; margin-bottom: 5px; text-align:center;" maxlength="20">
-                        <input type="text" id="regUser_${winId}" placeholder="Username (a-z, 0-9 only)" style="width: 220px; margin-bottom: 5px; text-align:center;" maxlength="15">
-                        <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 220px; margin-bottom: 5px; text-align:center;">
-                        <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 220px; margin-bottom: 10px; text-align:center;">
-                        <button class="action-btn" style="width: 220px;" onclick="handleChatSignup('${winId}')">Sign Up</button>
-                        <div style="margin-top: 15px; font-size: 13px;">အကောင့်ရှိပြီးသားလား? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login ဝင်ရန်</span></div>
+                        <h3 style="margin-top:0; margin-bottom: 20px;">Create Account</h3>
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
+                            <input type="text" id="regDisplayName_${winId}" placeholder="Display Name (e.g. John Doe)" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 30px;" maxlength="20">
+                            <div style="display: flex; height: 30px;">
+                                <span style="background: #dfdfdf; border: inset 2px; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="regUser_${winId}" placeholder="username (a-z, 0-9)" style="flex: 1; margin-bottom: 0; box-sizing: border-box; height: 100%;" maxlength="15">
+                            </div>
+                            <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 30px;">
+                            <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 30px;">
+                            <button class="action-btn" style="width: 100%; margin-top: 5px; height: 32px;" onclick="handleChatSignup('${winId}')">Register</button>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 13px;">Already have an account? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login</span></div>
                     </div>
 
-                    <!-- 💬 Chat Room မျက်နှာပြင် -->
+                    <!-- Chat Room Screen -->
                     <div id="chatMain_${winId}" style="display: none; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
-                        
-                        <!-- 🚨 ဒီနေရာလေးကို အစားထိုး ပြင်ဆင်ထားပါတယ် (Logout ခလုတ်ပါဝင်သည်) -->
                         <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between; align-items:center;">
                             <span>*** Topic for #global ***</span>
                             <div>
@@ -661,7 +669,6 @@
                     </div>
                 `;
 
-                // ယခင်က Login ဝင်ထားပြီးသားဆိုလျှင် Chat Room ကို တန်းဖွင့်ပေးမည်
                 if (localStorage.getItem('chatUsername')) {
                     document.getElementById(`chatLogin_${winId}`).style.display = 'none';
                     document.getElementById(`chatMain_${winId}`).style.display = 'flex';
@@ -906,39 +913,33 @@
 
         loadDesktop();
 
-        // --- အကောင့်မှ ထွက်ခြင်း (Logout) ---
+        // --- Logout Function ---
         window.chatLogout = function(winId) {
-            // Browser မှတ်ဉာဏ်ထဲမှ နာမည်များကို ဖျက်ပစ်မည်
             localStorage.removeItem('chatUsername');
             localStorage.removeItem('chatDisplayName');
-            
-            // Chat Room ကိုဖျောက်ပြီး Login မျက်နှာပြင်ကို ပြန်ပြမည်
             document.getElementById(`chatMain_${winId}`).style.display = 'none';
             document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
-            
-            // Password အဟောင်း ကျန်မနေစေရန် ရှင်းလင်းမည်
             document.getElementById(`loginPass_${winId}`).value = '';
         };
 
-        // --- မျက်နှာပြင် အပြောင်းအလဲလုပ်သည့် Function ---
+        // --- Toggle Auth View ---
         window.toggleAuthView = function(winId, view) {
             document.getElementById(`chatLogin_${winId}`).style.display = (view === 'login') ? 'flex' : 'none';
             document.getElementById(`chatSignup_${winId}`).style.display = (view === 'signup') ? 'flex' : 'none';
         };
 
-        // --- ၁။ အကောင့်အသစ်ဖွင့်ခြင်း (Signup) ---
+        // --- 1. Signup ---
         window.handleChatSignup = async function(winId) {
             const displayName = document.getElementById(`regDisplayName_${winId}`).value.trim();
             const username = document.getElementById(`regUser_${winId}`).value.trim();
             const pass = document.getElementById(`regPass_${winId}`).value;
             const confirm = document.getElementById(`regConfirm_${winId}`).value;
 
-            if(!displayName || !username || !pass) return customAlert("အချက်အလက်အားလုံး ပြည့်စုံစွာဖြည့်ပါ။", "Error");
-            if(pass !== confirm) return customAlert("Password များ တူညီမှုမရှိပါ။", "Error");
+            if(!displayName || !username || !pass) return customAlert("Please fill in all fields.", "Error");
+            if(pass !== confirm) return customAlert("Passwords do not match.", "Error");
             
-            // Username တွင် စာလုံးအသေးနှင့် ဂဏန်းသာ ပါဝင်ခွင့်ပြုမည်
             if (!/^[a-z0-9]+$/.test(username)) {
-                return customAlert("Username အား အင်္ဂလိပ်စာလုံးအသေးနှင့် ဂဏန်းများသာ အသုံးပြုပါ။ (ဥပမာ - aung285)", "Invalid Username");
+                return customAlert("Username must contain only lowercase letters and numbers (e.g. aung285).", "Invalid Username");
             }
 
             try {
@@ -950,20 +951,20 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    customAlert("အကောင့်ဖွင့်ခြင်း အောင်မြင်ပါသည်။<br>ယခု Login ဝင်ရောက်နိုင်ပါပြီ။", "Success");
-                    toggleAuthView(winId, 'login'); // အောင်မြင်ပါက Login မျက်နှာပြင်သို့ ပြန်ပို့မည်
+                    customAlert("Account created successfully.<br>You can now log in.", "Success");
+                    toggleAuthView(winId, 'login');
                 } else {
-                    customAlert(data.message || "အကောင့်ဖွင့်၍မရပါ။", "Error");
+                    customAlert(data.message || "Failed to create account.", "Error");
                 }
             } catch(e) { customAlert("Network Error.", "Error"); }
         };
 
-        // --- ၂။ Login ဝင်ခြင်း ---
+        // --- 2. Login ---
         window.handleChatLogin = async function(winId) {
             const username = document.getElementById(`loginUser_${winId}`).value.trim();
             const pass = document.getElementById(`loginPass_${winId}`).value;
 
-            if(!username || !pass) return customAlert("Username နှင့် Password ရိုက်ထည့်ပါ။", "Error");
+            if(!username || !pass) return customAlert("Please enter both username and password.", "Error");
 
             try {
                 const res = await fetch('/api/chat-login', {
@@ -989,8 +990,8 @@
             } catch(e) { customAlert("Network Error.", "Error"); }
         };
 
-        // --- ၃။ Firebase မှ စာများကို ဖမ်းယူခြင်း (ယခင်အတိုင်း) ---
-        function initChatListener(winId) {
+        // --- 3. Chat Listener (with coloring logic) ---
+        window.initChatListener = function(winId) {
             const sessionStartTime = Date.now(); 
             const chatRef = window.ref(window.db, 'global_chat');
             const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
@@ -1005,11 +1006,8 @@
                 const safeUsername = escapeHTML(data.username || "unknown");
                 let safeMessage = escapeHTML(data.message || "");
 
-                // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း ---
                 const myUsername = localStorage.getItem('chatUsername') || "";
                 let isMentionedMe = false;
-                
-                // 🚨 ကိုယ်တိုင် ပို့ထားတဲ့ စာလားဆိုတာ စစ်ဆေးခြင်း
                 const isMyMessage = (safeUsername === myUsername);
 
                 safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
@@ -1021,7 +1019,7 @@
                 });
 
                 const msgDiv = document.createElement('div');
-                msgDiv.style.marginBottom = "5px"; // စာကြောင်းများကြား နည်းနည်း ပိုခွာပေးမည်
+                msgDiv.style.marginBottom = "5px";
                 msgDiv.style.lineHeight = "1.4";
                 
                 if (isMentionedMe) {
@@ -1030,15 +1028,10 @@
                     msgDiv.style.paddingLeft = "5px";
                 }
 
-                // --- 🎨 အရောင်ခွဲခြားခြင်း (Retro Style ကိုမပျက်စေဘဲ) ---
-                // ကိုယ့်နာမည်ဆိုရင် Cyan ပြာစိမ်း၊ သူများနာမည်ဆိုရင် Gold ရွှေဝါရောင်
                 const nameColor = isMyMessage ? '#00ffff' : '#ffb000'; 
-                // ကိုယ်ပို့တဲ့စာကို အဖြူရောင်ပြမည်၊ သူများစာကို အစိမ်းရောင်ပြမည်
                 const textColor = isMyMessage ? '#ffffff' : '#00ff00';
-                // @username အသေ ID ကို မျက်စိမရှုပ်အောင် မှိန်ထားမည်
                 const tagStyle = "color: #666; font-size: 11px; font-weight: normal;";
 
-                // 🚨 UI အသစ်ဖြင့် ထည့်သွင်းခြင်း
                 msgDiv.innerHTML = `
                     <span style="color: #555;">[${timeStr}]</span> 
                     <b style="color: ${nameColor}; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeUsername} '">
@@ -1050,9 +1043,9 @@
                 msgBox.appendChild(msgDiv);
                 msgBox.scrollTop = msgBox.scrollHeight;
             });
-        }
+        };
 
-        // --- ၄။ စာပို့ခြင်း (Update Display Name ပါဝင်သည်) ---
+        // --- 4. Send Message ---
         window.sendChatMessage = async function(winId) {
             const nameInput = document.getElementById(`chatName_${winId}`);
             const msgInput = document.getElementById(`chatInput_${winId}`);
@@ -1063,14 +1056,12 @@
 
             if (!message || !username) return; 
 
-            // Spam ကာကွယ်ရေး
             const lastMsgTime = localStorage.getItem('lastMsgTime') || 0;
             if (Date.now() - lastMsgTime < 3000) { 
-                customAlert("ကျေးဇူးပြု၍ စာတစ်စောင်နှင့် တစ်စောင်ကြား (၃) စက္ကန့်စောင့်ပေးပါ။", "Spam Protection");
+                customAlert("Please wait 3 seconds before sending another message.", "Spam Protection");
                 return;
             }
 
-            // Display Name ပြောင်းသွားပါက MongoDB သို့ အသိပေးမည်
             if (displayName !== localStorage.getItem('chatDisplayName')) {
                 localStorage.setItem('chatDisplayName', displayName);
                 fetch('/api/chat-update-name', { 
@@ -1098,7 +1089,7 @@
                 localStorage.setItem('lastMsgTime', Date.now());
                 msgInput.value = ''; 
             } catch (error) {
-                customAlert("⚠️ ဆာဗာနှင့် ချိတ်ဆက်၍မရပါ။ VPN လိုအပ်နိုင်ပါသည်။", "Connection Failed");
+                customAlert("Connection Failed. A VPN might be required.", "Error");
             } finally {
                 msgInput.disabled = false;
                 msgInput.placeholder = "type message...";
