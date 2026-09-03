@@ -139,28 +139,16 @@
     </style>
 
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
-        authDomain: "nextsocietymm.firebaseapp.com",
-        databaseURL: "https://nextsocietymm-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "nextsocietymm",
-        storageBucket: "nextsocietymm.firebasestorage.app",
-        messagingSenderId: "44299952798",
-        appId: "1:44299952798:web:75e0d7a5cac6d1698a918f"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // အောက်ပါ URL နှင့် Key ကို သင့် Supabase မှ အချက်အလက်များဖြင့် အစားထိုးပါ
+    const supabaseUrl = 'https://lpkfowdxtpizlzyikjqb.supabase.co';
+    const supabaseAnonKey = 'sb_publishable_9tQRzmsNbsa_gmE7jH2aAQ_xhjFGfW3';
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
     // Global ကနေလှမ်းခေါ်လို့ရအောင် Window Object ထဲထည့်ထားပါမယ်
-    window.db = db;
-    window.ref = ref;
-    window.push = push;
-    window.onChildAdded = onChildAdded;
-    window.serverTimestamp = serverTimestamp;
+    window.supabase = supabase;
 </script>
     
     <script>
@@ -622,24 +610,40 @@
 
                 document.getElementById(`chatName_${winId}`).value = localStorage.getItem('chatUsername') || '';
 
-                const chatRef = window.ref(window.db, 'global_chat');
                 const msgBox = document.getElementById(`chatMessages_${winId}`);
 
-                window.onChildAdded(chatRef, (snapshot) => {
-                    const data = snapshot.val();
-                    
-                    // အချိန်ဖော်ပြရန် (ဥပမာ - [14:32:05])
-                    const d = new Date(data.timestamp || Date.now());
+                // Message များကို UI တွင်ပြပေးမည့် Function
+                const appendMessage = (data) => {
+                    const d = new Date(data.created_at || Date.now());
                     const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
                     
                     const msgDiv = document.createElement('div');
                     msgDiv.style.marginBottom = "3px";
-                    // Hacker IRC Format: [14:32:05] <admin> hello
                     msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff;">&lt;${data.name}&gt;</b> <span style="word-break: break-word;">${data.message}</span>`;
                     
                     msgBox.appendChild(msgDiv);
-                    msgBox.scrollTop = msgBox.scrollHeight; // Auto Scroll
-                });
+                    msgBox.scrollTop = msgBox.scrollHeight;
+                };
+
+                // ၁။ အရင်ပို့ထားပြီးသား Message အဟောင်း (၅၀) ခုကို ဆွဲထုတ်ခြင်း
+                window.supabase
+                    .from('global_chat')
+                    .select('*')
+                    .order('created_at', { ascending: true })
+                    .limit(50)
+                    .then(({ data, error }) => {
+                        if (data) {
+                            data.forEach(appendMessage);
+                        }
+                    });
+
+                // ၂။ Message အသစ်ဝင်လာတိုင်း Realtime ဖမ်းယူခြင်း
+                window.supabase
+                    .channel('public:global_chat')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_chat' }, payload => {
+                        appendMessage(payload.new);
+                    })
+                    .subscribe();
                 
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
@@ -877,25 +881,32 @@
 
         loadDesktop();
 
-        function sendChatMessage(winId) {
-    const nameInput = document.getElementById(`chatName_${winId}`);
-    const msgInput = document.getElementById(`chatInput_${winId}`);
-    const name = nameInput.value.trim() || "Anonymous";
-    const message = msgInput.value.trim();
+        async function sendChatMessage(winId) {
+            const nameInput = document.getElementById(`chatName_${winId}`);
+            const msgInput = document.getElementById(`chatInput_${winId}`);
+            const name = nameInput.value.trim() || "Anonymous";
+            const message = msgInput.value.trim();
 
-    if (!message) return; // စာမရှိရင် မပို့ပါ
+            if (!message) return; // စာမရှိရင် မပို့ပါ
 
-    localStorage.setItem('chatUsername', name); // နာမည်ကို မှတ်ထားပေးမည်
+            localStorage.setItem('chatUsername', name); // နာမည်ကို မှတ်ထားပေးမည်
 
-    // Firebase သို့ Push လုပ်ခြင်း
-    window.push(window.ref(window.db, 'global_chat'), {
-        name: name,
-        message: message,
-        timestamp: window.serverTimestamp()
-    });
+            // Input ကို ချက်ချင်း ရှင်းလင်းမည် (User Experience ပိုကောင်းရန်)
+            msgInput.value = ''; 
 
-    msgInput.value = ''; // ပို့ပြီးရင် Textbox ကို ရှင်းလင်းမည်
-}
+            // Supabase သို့ Data ပို့ခြင်း
+            const { error } = await window.supabase
+                .from('global_chat')
+                .insert([
+                    { name: name, message: message }
+                ]);
+
+            if (error) {
+                console.error("Error sending message:", error);
+                // Error ဖြစ်ခဲ့လျှင် စာပြန်ရေးပေးမည်
+                msgInput.value = message; 
+            }
+        }
     </script>
 </body>
 </html>
