@@ -238,6 +238,21 @@
     </div>
 
     <script>
+
+        // --- XSS ကာကွယ်ရန် Helper Function (ဒီနေရာမှာ ထည့်ပါ) ---
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>'"]/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[match];
+            });
+        }
+        
         // --- New Boot Sequence JS ---
         const bootScreen = document.getElementById('windows-boot-screen');
         const loadingView = document.getElementById('loading-view');
@@ -632,10 +647,15 @@
                     const d = new Date(data.timestamp || Date.now());
                     const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
                     
+                    // 🚨 [လုံခြုံရေးပြင်ဆင်ချက်] - User ရိုက်ထည့်လိုက်သော နာမည်နှင့် စာများကို အန္တရာယ်ကင်းအောင် သန့်စင်ခြင်း 
+                    const safeName = escapeHTML(data.name || "Anonymous");
+                    const safeMessage = escapeHTML(data.message || "");
+
                     const msgDiv = document.createElement('div');
                     msgDiv.style.marginBottom = "3px";
-                    // Hacker IRC Format: [14:32:05] <admin> hello
-                    msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff;">&lt;${data.name}&gt;</b> <span style="word-break: break-word;">${data.message}</span>`;
+                    
+                    // Hacker IRC Format: [14:32:05] <admin> hello (Safe variables များကိုသာ အသုံးပြုထားသည်)
+                    msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff;">&lt;${safeName}&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
                     
                     msgBox.appendChild(msgDiv);
                     msgBox.scrollTop = msgBox.scrollHeight; // Auto Scroll
