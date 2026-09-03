@@ -638,9 +638,14 @@
 
                     <!-- 💬 Chat Room မျက်နှာပြင် -->
                     <div id="chatMain_${winId}" style="display: none; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
-                        <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between;">
-                            <span>*** Topic for #global: Welcome ***</span>
-                            <span id="myUserIdInfo_${winId}" style="color:yellow; font-size: 11px;"></span>
+                        
+                        <!-- 🚨 ဒီနေရာလေးကို အစားထိုး ပြင်ဆင်ထားပါတယ် (Logout ခလုတ်ပါဝင်သည်) -->
+                        <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between; align-items:center;">
+                            <span>*** Topic for #global ***</span>
+                            <div>
+                                <span id="myUserIdInfo_${winId}" style="color:yellow; font-size: 11px; margin-right:8px;"></span>
+                                <button onclick="chatLogout('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:10px; cursor:pointer; color:black;">Logout</button>
+                            </div>
                         </div>
                         
                         <div id="chatMessages_${winId}" style="flex: 1; background: #000; color: #00ff00; overflow-y: auto; padding: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.5; text-shadow: 0 0 3px rgba(0,255,0,0.3);">
