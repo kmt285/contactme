@@ -666,13 +666,14 @@
                     const safeName = escapeHTML(data.name || "Anonymous");
                     let safeMessage = escapeHTML(data.message || "");
 
-                    // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း ---
-                    const myFullId = (localStorage.getItem('chatUsername') || "Anonymous") + "#" + localStorage.getItem('chatUserTag');
+                    // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း (Tag မပါတော့ပါ) ---
+                    const myUsername = localStorage.getItem('chatUsername') || "";
                     let isMentionedMe = false;
 
-                    // Message ထဲမှာ @Username#Tag ပါလာရင် အရောင်ပြောင်းမည်
-                    safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+#[0-9]+)/g, (match, mentionedUser) => {
-                        if (mentionedUser === myFullId) {
+                    // Message ထဲမှာ @Username ပါလာရင် အရောင်ပြောင်းမည်
+                    safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
+                        // စာလုံးအကြီးအသေးမရွေး (Case Insensitive) စစ်ဆေးမည်
+                        if (myUsername && mentionedUser.toLowerCase() === myUsername.toLowerCase()) {
                             isMentionedMe = true;
                             return `<span style="background: yellow; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">${match}</span>`;
                         }
@@ -690,7 +691,7 @@
                     }
 
                     msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeName} '">&lt;${safeName}&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
-                    
+
                     msgBox.appendChild(msgDiv);
                     msgBox.scrollTop = msgBox.scrollHeight;
                 });
@@ -934,39 +935,60 @@
         async function sendChatMessage(winId) {
             const nameInput = document.getElementById(`chatName_${winId}`);
             const msgInput = document.getElementById(`chatInput_${winId}`);
-            let baseName = nameInput.value.trim().replace(/\s+/g, '_') || "Anonymous"; // Space များကို _ ပြောင်းမည်
+            const username = nameInput.value.trim();
             const message = msgInput.value.trim();
 
             if (!message) return; 
 
-            // Cooldown ၃ စက္ကန့်
+            // --- ၁။ Username Format စစ်ဆေးခြင်း (a-z, 0-9, _, ၃ လုံးမှ ၁၅ လုံး) ---
+            if (!/^[a-zA-Z0-9_]{3,15}$/.test(username)) {
+                customAlert("Username သည် အင်္ဂလိပ်စာလုံး၊ ဂဏန်း၊ နှင့် _ (underscore) သာပါဝင်ရမည်။<br>အနည်းဆုံး ၃ လုံးမှ ၁၅ လုံးအတွင်း ဖြစ်ရမည်။", "Invalid Username");
+                return;
+            }
+
+            // --- ၂။ Spam ကာကွယ်ရေး (Cooldown ၃ စက္ကန့်) ---
             const lastMsgTime = localStorage.getItem('lastMsgTime') || 0;
             if (Date.now() - lastMsgTime < 3000) { 
                 customAlert("ကျေးဇူးပြု၍ စာတစ်စောင်နှင့် တစ်စောင်ကြား (၃) စက္ကန့်စောင့်ပေးပါ။", "Spam Protection");
                 return;
             }
 
-            const userTag = localStorage.getItem('chatUserTag');
-            const uniqueName = `${baseName}#${userTag}`;
-            localStorage.setItem('chatUsername', baseName); 
+            // --- ၃။ Device Secret ဖန်တီးခြင်း (ဤဖုန်း/ကွန်ပျူတာ၏ သီးသန့် ID) ---
+            let deviceSecret = localStorage.getItem('deviceSecret');
+            if (!deviceSecret) {
+                deviceSecret = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('deviceSecret', deviceSecret);
+            }
 
             msgInput.disabled = true;
             msgInput.placeholder = "Sending...";
 
             try {
-                // --- 🚨 MongoDB သို့ User Register လုပ်ခြင်း ---
-                await fetch('/api/register-chat-user', {
+                // --- ၄။ MongoDB သို့ Username ရယူခွင့်ပြုရန် တောင်းဆိုခြင်း ---
+                const claimRes = await fetch('/api/claim-username', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: baseName, tag: userTag })
+                    body: JSON.stringify({ username: username, secret: deviceSecret })
                 });
+                const claimData = await claimRes.json();
 
-                // --- Firebase သို့ စာပို့ခြင်း ---
+                // အခြားသူ ယူထားပြီးသား နာမည်ဖြစ်နေလျှင်
+                if (!claimData.success) {
+                    customAlert(`<b>${username}</b> ဆိုသည့် နာမည်အား အခြားသူတစ်ဦးမှ အသုံးပြုနေပါသည်။<br>ကျေးဇူးပြု၍ နာမည်အသစ်တစ်ခု ပြောင်းလဲအသုံးပြုပါ။`, "Username Taken");
+                    msgInput.disabled = false;
+                    msgInput.placeholder = "type command or message...";
+                    return;
+                }
+
+                // အောင်မြင်ပါက Username ကို မှတ်ထားမည်
+                localStorage.setItem('chatUsername', username);
+
+                // --- ၅။ Firebase သို့ စာပို့ခြင်း ---
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
                 const pushPromise = window.push(window.ref(window.db, 'global_chat'), {
-                    name: uniqueName, 
+                    name: username, // Random Tag မပါတော့ပါ
                     message: message,
-                    timestamp: window.serverTimestamp() // Firebase Server အချိန်ကိုသုံးခြင်းက History စစ်ရာတွင် အရေးပါသည်
+                    timestamp: window.serverTimestamp()
                 });
 
                 await Promise.race([pushPromise, timeout]);
