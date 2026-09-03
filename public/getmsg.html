@@ -191,8 +191,8 @@
             const area = document.getElementById('messagesArea'); 
             area.innerHTML = "Loading...";
             try {
-                // Method ကို POST အစား GET သို့ ပြောင်းထားသည်
-                const res = await fetch('/api/get-messages', {
+                // /api/get-messages နောက်မှာ ?t=... ထပ်ပေါင်းထည့်လိုက်ပါသည်
+                const res = await fetch('/api/get-messages?t=' + new Date().getTime(), {
                     method: 'GET', 
                     headers: getAuthHeaders()
                 });
@@ -476,7 +476,8 @@
         async function saveRawConfig() { syncJSONtoGUI(); await saveToServer(); }
 
         async function loadConfig() {
-            const res = await fetch('/api/get-config');
+            // /api/get-config နောက်မှာ ?t=... ထပ်ပေါင်းထည့်လိုက်ပါသည်
+            const res = await fetch('/api/get-config?t=' + new Date().getTime());
             let data = await res.json();
             if(Array.isArray(data)) { data = { wallpaper: "#008080", systemInfo: "OS Version 1.0", items: data }; }
             document.getElementById('configEditor').value = JSON.stringify(data, null, 4);
