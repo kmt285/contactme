@@ -616,15 +616,27 @@
 
             } else if(item.type === 'chat') {
                 contentArea.innerHTML = `
-                    <!-- ဝင်ဝင်ချင်း နာမည်တောင်းမည့် မျက်နှာပြင် -->
-                    <div id="chatSetup_${winId}" style="padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                        <h3 style="margin-top:0;">🌐 Global Chat</h3>
-                        <p style="font-size: 13px; color: #555; text-align:center;">Chat အသုံးပြုရန် Display Name တစ်ခုပေးပါ။<br>(နောက်ပိုင်း အချိန်မရွေး ပြန်ပြောင်းနိုင်ပါသည်။)</p>
-                        <input type="text" id="setupName_${winId}" placeholder="e.g. Aung Aung" style="width: 200px; margin-bottom: 10px; text-align:center;" maxlength="20">
-                        <button class="action-btn" style="width: 200px;" onclick="joinChat('${winId}')">Enter Chat</button>
+                    <!-- 🔐 Login မျက်နှာပြင် -->
+                    <div id="chatLogin_${winId}" style="padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0;">🔐 Chat Login</h3>
+                        <input type="text" id="loginUser_${winId}" placeholder="Username (e.g. aung285)" style="width: 220px; margin-bottom: 5px; text-align:center;">
+                        <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 220px; margin-bottom: 10px; text-align:center;">
+                        <button class="action-btn" style="width: 220px;" onclick="handleChatLogin('${winId}')">Enter</button>
+                        <div style="margin-top: 15px; font-size: 13px;">အကောင့်မရှိသေးဘူးလား? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Create Account</span></div>
                     </div>
 
-                    <!-- Chat Room မျက်နှာပြင် (စစချင်း ဖျောက်ထားမည်) -->
+                    <!-- 📝 Signup မျက်နှာပြင် -->
+                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0;">📝 Create Account</h3>
+                        <input type="text" id="regDisplayName_${winId}" placeholder="Display Name (e.g. Aung Aung)" style="width: 220px; margin-bottom: 5px; text-align:center;" maxlength="20">
+                        <input type="text" id="regUser_${winId}" placeholder="Username (a-z, 0-9 only)" style="width: 220px; margin-bottom: 5px; text-align:center;" maxlength="15">
+                        <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 220px; margin-bottom: 5px; text-align:center;">
+                        <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 220px; margin-bottom: 10px; text-align:center;">
+                        <button class="action-btn" style="width: 220px;" onclick="handleChatSignup('${winId}')">Sign Up</button>
+                        <div style="margin-top: 15px; font-size: 13px;">အကောင့်ရှိပြီးသားလား? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login ဝင်ရန်</span></div>
+                    </div>
+
+                    <!-- 💬 Chat Room မျက်နှာပြင် -->
                     <div id="chatMain_${winId}" style="display: none; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
                         <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between;">
                             <span>*** Topic for #global: Welcome ***</span>
@@ -644,8 +656,14 @@
                     </div>
                 `;
 
-                // ယခင်က နာမည်ပေးထားဖူးပါက ကြိုထည့်ပေးထားမည်
-                document.getElementById(`setupName_${winId}`).value = localStorage.getItem('chatDisplayName') || '';
+                // ယခင်က Login ဝင်ထားပြီးသားဆိုလျှင် Chat Room ကို တန်းဖွင့်ပေးမည်
+                if (localStorage.getItem('chatUsername')) {
+                    document.getElementById(`chatLogin_${winId}`).style.display = 'none';
+                    document.getElementById(`chatMain_${winId}`).style.display = 'flex';
+                    document.getElementById(`chatName_${winId}`).value = localStorage.getItem('chatDisplayName') || '';
+                    document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${localStorage.getItem('chatUsername')}`;
+                    initChatListener(winId);
+                }
                 
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
@@ -883,54 +901,76 @@
 
         loadDesktop();
 
-        // --- ၁။ Chat Room သို့ ဝင်ရောက်ခြင်း ---
-        window.joinChat = async function(winId) {
-            const setupNameInput = document.getElementById(`setupName_${winId}`);
-            const displayName = setupNameInput.value.trim();
-            
-            if (!displayName) return customAlert("Display Name ထည့်သွင်းပေးပါ။", "Error");
+        // --- မျက်နှာပြင် အပြောင်းအလဲလုပ်သည့် Function ---
+        window.toggleAuthView = function(winId, view) {
+            document.getElementById(`chatLogin_${winId}`).style.display = (view === 'login') ? 'flex' : 'none';
+            document.getElementById(`chatSignup_${winId}`).style.display = (view === 'signup') ? 'flex' : 'none';
+        };
 
-            // Device ID ကို ရှာမည် (သို့) ဖန်တီးမည်
-            let deviceId = localStorage.getItem('deviceSecret');
-            if (!deviceId) {
-                deviceId = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-                localStorage.setItem('deviceSecret', deviceId);
+        // --- ၁။ အကောင့်အသစ်ဖွင့်ခြင်း (Signup) ---
+        window.handleChatSignup = async function(winId) {
+            const displayName = document.getElementById(`regDisplayName_${winId}`).value.trim();
+            const username = document.getElementById(`regUser_${winId}`).value.trim();
+            const pass = document.getElementById(`regPass_${winId}`).value;
+            const confirm = document.getElementById(`regConfirm_${winId}`).value;
+
+            if(!displayName || !username || !pass) return customAlert("အချက်အလက်အားလုံး ပြည့်စုံစွာဖြည့်ပါ။", "Error");
+            if(pass !== confirm) return customAlert("Password များ တူညီမှုမရှိပါ။", "Error");
+            
+            // Username တွင် စာလုံးအသေးနှင့် ဂဏန်းသာ ပါဝင်ခွင့်ပြုမည်
+            if (!/^[a-z0-9]+$/.test(username)) {
+                return customAlert("Username အား အင်္ဂလိပ်စာလုံးအသေးနှင့် ဂဏန်းများသာ အသုံးပြုပါ။ (ဥပမာ - aung285)", "Invalid Username");
             }
 
-            const btn = setupNameInput.nextElementSibling;
-            btn.innerText = "Connecting..."; btn.disabled = true;
-
             try {
-                // MongoDB သို့ မှတ်ပုံတင်ခြင်း/Update လုပ်ခြင်း
-                const res = await fetch('/api/chat-join', {
+                const res = await fetch('/api/chat-signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: deviceId, display_name: displayName })
+                    body: JSON.stringify({ display_name: displayName, username: username, password: pass })
                 });
                 const data = await res.json();
                 
-                if(data.success) {
-                    localStorage.setItem('chatDisplayName', data.display_name);
-                    localStorage.setItem('chatUsername', data.username); // System မှ ချပေးသော ID (ဥပမာ user_1A2B)
-
-                    // မျက်နှာပြင် ပြောင်းလဲခြင်း
-                    document.getElementById(`chatSetup_${winId}`).style.display = 'none';
-                    document.getElementById(`chatMain_${winId}`).style.display = 'flex';
-                    document.getElementById(`chatName_${winId}`).value = data.display_name;
-                    document.getElementById(`myUserIdInfo_${winId}`).innerText = `Your ID: @${data.username}`;
-
-                    // Firebase ဖြင့် စာများစတင်ဖတ်ခြင်း
-                    initChatListener(winId);
+                if (data.success) {
+                    customAlert("အကောင့်ဖွင့်ခြင်း အောင်မြင်ပါသည်။<br>ယခု Login ဝင်ရောက်နိုင်ပါပြီ။", "Success");
+                    toggleAuthView(winId, 'login'); // အောင်မြင်ပါက Login မျက်နှာပြင်သို့ ပြန်ပို့မည်
                 } else {
-                    customAlert("Failed to join chat server.", "Error");
+                    customAlert(data.message || "အကောင့်ဖွင့်၍မရပါ။", "Error");
                 }
-            } catch(e) {
-                customAlert("Network error. VPN လိုအပ်နိုင်ပါသည်။", "Connection Failed");
-            }
-            btn.innerText = "Enter Chat"; btn.disabled = false;
+            } catch(e) { customAlert("Network Error.", "Error"); }
         };
 
-        // --- ၂။ Firebase မှ စာများကို ဖမ်းယူခြင်း ---
+        // --- ၂။ Login ဝင်ခြင်း ---
+        window.handleChatLogin = async function(winId) {
+            const username = document.getElementById(`loginUser_${winId}`).value.trim();
+            const pass = document.getElementById(`loginPass_${winId}`).value;
+
+            if(!username || !pass) return customAlert("Username နှင့် Password ရိုက်ထည့်ပါ။", "Error");
+
+            try {
+                const res = await fetch('/api/chat-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: pass })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    localStorage.setItem('chatUsername', data.username);
+                    localStorage.setItem('chatDisplayName', data.display_name);
+
+                    document.getElementById(`chatLogin_${winId}`).style.display = 'none';
+                    document.getElementById(`chatMain_${winId}`).style.display = 'flex';
+                    document.getElementById(`chatName_${winId}`).value = data.display_name;
+                    document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${data.username}`;
+                    
+                    initChatListener(winId);
+                } else {
+                    customAlert(data.message || "Login failed.", "Error");
+                }
+            } catch(e) { customAlert("Network Error.", "Error"); }
+        };
+
+        // --- ၃။ Firebase မှ စာများကို ဖမ်းယူခြင်း (ယခင်အတိုင်း) ---
         function initChatListener(winId) {
             const sessionStartTime = Date.now(); 
             const chatRef = window.ref(window.db, 'global_chat');
@@ -943,13 +983,12 @@
                 const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
                 
                 const safeDisplayName = escapeHTML(data.displayName || "Anonymous");
-                const safeUsername = escapeHTML(data.username || "unknown"); // အသေ ID
+                const safeUsername = escapeHTML(data.username || "unknown");
                 let safeMessage = escapeHTML(data.message || "");
 
                 const myUsername = localStorage.getItem('chatUsername') || "";
                 let isMentionedMe = false;
 
-                // Mention စစ်ဆေးခြင်း (ID ဖြင့်သာ Mention ခေါ်ရမည် - ဥပမာ @user_1A2B)
                 safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
                     if (myUsername && mentionedUser === myUsername) {
                         isMentionedMe = true;
@@ -967,7 +1006,6 @@
                     msgDiv.style.paddingLeft = "5px";
                 }
 
-                // UI ပေါ်တွင် - [12:00:00] <Aung Aung @user_1A2B> Hello ဟု ပြမည်
                 msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeUsername} '">&lt;${safeDisplayName} <small style="color:#888;">@${safeUsername}</small>&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
                 
                 msgBox.appendChild(msgDiv);
@@ -975,15 +1013,14 @@
             });
         }
 
-        // --- ၃။ စာပို့ခြင်း ---
+        // --- ၄။ စာပို့ခြင်း (Update Display Name ပါဝင်သည်) ---
         window.sendChatMessage = async function(winId) {
             const nameInput = document.getElementById(`chatName_${winId}`);
             const msgInput = document.getElementById(`chatInput_${winId}`);
             
             const displayName = nameInput.value.trim() || "Anonymous";
             const message = msgInput.value.trim();
-            const username = localStorage.getItem('chatUsername'); // System မှ ပေးထားသော အသေ ID
-            const deviceId = localStorage.getItem('deviceSecret');
+            const username = localStorage.getItem('chatUsername');
 
             if (!message || !username) return; 
 
@@ -994,14 +1031,14 @@
                 return;
             }
 
-            // Chat ထဲရောက်မှ Display Name ထပ်ပြောင်းခဲ့လျှင် နောက်ကွယ်မှ Server သို့ Update လှမ်းလုပ်ပေးမည်
+            // Display Name ပြောင်းသွားပါက MongoDB သို့ အသိပေးမည်
             if (displayName !== localStorage.getItem('chatDisplayName')) {
                 localStorage.setItem('chatDisplayName', displayName);
-                fetch('/api/chat-join', { 
+                fetch('/api/chat-update-name', { 
                     method: 'POST', 
                     headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ device_id: deviceId, display_name: displayName }) 
-                }).catch(e => console.log("Silent update failed"));
+                    body: JSON.stringify({ username: username, display_name: displayName }) 
+                }).catch(e => console.log("Update name failed"));
             }
 
             msgInput.disabled = true;
@@ -1010,7 +1047,6 @@
             try {
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
                 
-                // Firebase သို့ Display Name ရော၊ Unique Username ပါ ပို့မည်
                 const pushPromise = window.push(window.ref(window.db, 'global_chat'), {
                     displayName: displayName,
                     username: username, 
