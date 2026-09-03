@@ -917,6 +917,7 @@
         window.chatLogout = function(winId) {
             localStorage.removeItem('chatUsername');
             localStorage.removeItem('chatDisplayName');
+            sessionStorage.removeItem('chatSessionStartTime');
             document.getElementById(`chatMain_${winId}`).style.display = 'none';
             document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
             document.getElementById(`loginPass_${winId}`).value = '';
@@ -978,6 +979,8 @@
                     localStorage.setItem('chatUsername', data.username);
                     localStorage.setItem('chatDisplayName', data.display_name);
 
+                    sessionStorage.setItem('chatSessionStartTime', Date.now());
+
                     document.getElementById(`chatLogin_${winId}`).style.display = 'none';
                     document.getElementById(`chatMain_${winId}`).style.display = 'flex';
                     document.getElementById(`chatName_${winId}`).value = data.display_name;
@@ -993,19 +996,23 @@
         // --- 3. Chat Listener (with coloring logic) ---
         window.initChatListener = function(winId) {
             const msgBox = document.getElementById(`chatMessages_${winId}`);
-            
-            // 🚨 ပြင်ဆင်ချက် (၁): Listener နှစ်ခါပွားခြင်းကို တားဆီးရန်
             if (!msgBox || msgBox.dataset.listening === "true") return; 
-            msgBox.dataset.listening = "true"; // ဖွင့်လိုက်ပြီဖြစ်ကြောင်း မှတ်သားထားမည်
+            msgBox.dataset.listening = "true";
 
-            const sessionStartTime = Date.now(); 
+            // 🚨 ပြင်ဆင်ချက်: Tab မပိတ်မချင်း အချိန်ကို SessionStorage တွင် ဆက်မှတ်ထားမည်
+            let sessionStartTime = sessionStorage.getItem('chatSessionStartTime');
+            if (!sessionStartTime) {
+                sessionStartTime = Date.now();
+                sessionStorage.setItem('chatSessionStartTime', sessionStartTime);
+            } else {
+                sessionStartTime = parseInt(sessionStartTime, 10);
+            }
+
             const chatRef = window.ref(window.db, 'global_chat');
             const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
 
             window.onChildAdded(liveChatQuery, (snapshot) => {
                 const currentMsgBox = document.getElementById(`chatMessages_${winId}`);
-                
-                // 🚨 ပြင်ဆင်ချက် (၂): Window ပိတ်သွားပါက (X နှိပ်လိုက်ပါက) စာဆက်မထည့်ရန်
                 if (!currentMsgBox) return; 
 
                 const data = snapshot.val();
