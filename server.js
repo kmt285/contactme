@@ -166,6 +166,29 @@ app.post('/api/delete', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
+// --- 🚨 ၂၄ နာရီတစ်ခါ Vercel Cron မှလှမ်းခေါ်၍ Firebase ကို ရှင်းလင်းမည့် API ---
+app.get('/api/cron/clear-firebase', async (req, res) => {
+    try {
+        // သင်၏ Firebase Realtime Database URL
+        const firebaseUrl = "https://nextsocietymm-default-rtdb.asia-southeast1.firebasedatabase.app/global_chat.json";
+        
+        // Firebase မှ global_chat အောက်ရှိ Data အားလုံးကို ဖျက်ပစ်ရန် DELETE Request ပို့ခြင်း
+        const response = await fetch(firebaseUrl, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            console.log("✅ Chat database cleared successfully.");
+            res.status(200).json({ success: true, message: "Chat database cleared." });
+        } else {
+            res.status(500).json({ success: false, message: "Failed to clear Firebase." });
+        }
+    } catch (error) {
+        console.error("❌ Cron Job Error:", error);
+        res.status(500).json({ success: false, error: "Cron Job Failed" });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
 module.exports = app;
