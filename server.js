@@ -27,6 +27,33 @@ const Config = mongoose.model('Config', ConfigSchema);
 const MessageSchema = new mongoose.Schema({ content: { type: String, required: true }, createdAt: { type: Date, default: Date.now } });
 const Message = mongoose.model('Message', MessageSchema);
 
+// --- Chat User Schema (MongoDB တွင်သိမ်းရန်) ---
+const ChatUserSchema = new mongoose.Schema({ 
+    username: { type: String, required: true },
+    tag: { type: String, required: true },
+    fullId: { type: String, required: true, unique: true }, // e.g., AungAung#13556
+    createdAt: { type: Date, default: Date.now } 
+});
+const ChatUser = mongoose.model('ChatUser', ChatUserSchema);
+
+// --- Chat User Register API ---
+app.post('/api/register-chat-user', async (req, res) => {
+    try {
+        const { username, tag } = req.body;
+        const fullId = `${username}#${tag}`;
+        
+        // ရှိပြီးသားလား စစ်ဆေးမည်
+        const existingUser = await ChatUser.findOne({ fullId });
+        if (!existingUser) {
+            // မရှိသေးရင် အသစ်မှတ်မည်
+            await new ChatUser({ username, tag, fullId }).save();
+        }
+        res.status(200).json({ success: true, fullId });
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Database Error" }); 
+    }
+});
+
 const sendLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { success: false, error: "Too many requests." } });
 
 // --- JWT Middleware (Token စစ်ဆေးသည့် အပိုင်း) ---
