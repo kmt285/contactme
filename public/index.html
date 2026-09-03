@@ -887,14 +887,12 @@
             const name = nameInput.value.trim() || "Anonymous";
             const message = msgInput.value.trim();
 
-            if (!message) return; // စာမရှိရင် မပို့ပါ
+            if (!message) return;
 
-            localStorage.setItem('chatUsername', name); // နာမည်ကို မှတ်ထားပေးမည်
+            localStorage.setItem('chatUsername', name); 
 
-            // Input ကို ချက်ချင်း ရှင်းလင်းမည် (User Experience ပိုကောင်းရန်)
             msgInput.value = ''; 
 
-            // Supabase သို့ Data ပို့ခြင်း
             const { error } = await window.supabase
                 .from('global_chat')
                 .insert([
@@ -902,8 +900,9 @@
                 ]);
 
             if (error) {
-                console.error("Error sending message:", error);
-                // Error ဖြစ်ခဲ့လျှင် စာပြန်ရေးပေးမည်
+                console.error("Supabase Insert Error:", error);
+                // ယာယီ Alert ပြပြီး အမှားကို စစ်ဆေးပါ
+                alert("စာပို့ရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။ Error: " + error.message); 
                 msgInput.value = message; 
             }
         }
