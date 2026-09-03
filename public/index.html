@@ -897,25 +897,52 @@
 
         loadDesktop();
 
-        function sendChatMessage(winId) {
-    const nameInput = document.getElementById(`chatName_${winId}`);
-    const msgInput = document.getElementById(`chatInput_${winId}`);
-    const name = nameInput.value.trim() || "Anonymous";
-    const message = msgInput.value.trim();
+        async function sendChatMessage(winId) {
+            const nameInput = document.getElementById(`chatName_${winId}`);
+            const msgInput = document.getElementById(`chatInput_${winId}`);
+            const name = nameInput.value.trim() || "Anonymous";
+            const message = msgInput.value.trim();
 
-    if (!message) return; // စာမရှိရင် မပို့ပါ
+            if (!message) return; // စာမရှိရင် မပို့ပါ
 
-    localStorage.setItem('chatUsername', name); // နာမည်ကို မှတ်ထားပေးမည်
+            localStorage.setItem('chatUsername', name); // နာမည်ကို မှတ်ထားပေးမည်
 
-    // Firebase သို့ Push လုပ်ခြင်း
-    window.push(window.ref(window.db, 'global_chat'), {
-        name: name,
-        message: message,
-        timestamp: window.serverTimestamp()
-    });
+            // စာပို့နေစဉ် Input ကို ခဏပိတ်ထားပြီး Sending ပြထားမည်
+            msgInput.disabled = true;
+            msgInput.placeholder = "Sending...";
 
-    msgInput.value = ''; // ပို့ပြီးရင် Textbox ကို ရှင်းလင်းမည်
-}
+            try {
+                // (၅) စက္ကန့်အတွင်း မပို့နိုင်ပါက Error အဖြစ်သတ်မှတ်မည့် Timeout
+                const timeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Timeout")), 5000)
+                );
+
+                // Firebase သို့ Push လုပ်သည့်လုပ်ငန်းစဉ်
+                const pushPromise = window.push(window.ref(window.db, 'global_chat'), {
+                    name: name,
+                    message: message,
+                    timestamp: window.serverTimestamp()
+                });
+
+                // Push လုပ်ခြင်း နှင့် ၅ စက္ကန့်စောင့်ခြင်းကို ပြိုင်လုပ်မည် (Race)
+                await Promise.race([pushPromise, timeout]);
+
+                // အောင်မြင်သွားလျှင် (VPN ချိတ်ထားလျှင်) Textbox ကို ရှင်းလင်းမည်
+                msgInput.value = ''; 
+                
+            } catch (error) {
+                // (၅) စက္ကန့်အတွင်း မရောက်ပါက သင်ရှိပြီးသား customAlert ဖြင့် လှပစွာ ပြသမည်
+                customAlert(
+                    "⚠️ ဆာဗာနှင့် ချိတ်ဆက်၍မရပါ။<br><br>မြန်မာနိုင်ငံမှဖြစ်ပါက Chat Room အသုံးပြုရန် <b>VPN</b> ချိတ်ဆက်ပေးရန် လိုအပ်ပါသည်။ ကျေးဇူးပြု၍ VPN ဖွင့်ပြီးမှ ထပ်မံကြိုးစားကြည့်ပါ။", 
+                    "Connection Failed"
+                );
+            } finally {
+                // ပို့တာ အောင်မြင်သည်ဖြစ်စေ၊ VPN Alert ပြသည်ဖြစ်စေ Input ကို ပုံမှန်အတိုင်းပြန်ဖွင့်ပေးမည်
+                msgInput.disabled = false;
+                msgInput.placeholder = "type command or message...";
+                msgInput.focus();
+            }
+        }
     </script>
 </body>
 </html>
