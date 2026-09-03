@@ -906,6 +906,20 @@
 
         loadDesktop();
 
+        // --- အကောင့်မှ ထွက်ခြင်း (Logout) ---
+        window.chatLogout = function(winId) {
+            // Browser မှတ်ဉာဏ်ထဲမှ နာမည်များကို ဖျက်ပစ်မည်
+            localStorage.removeItem('chatUsername');
+            localStorage.removeItem('chatDisplayName');
+            
+            // Chat Room ကိုဖျောက်ပြီး Login မျက်နှာပြင်ကို ပြန်ပြမည်
+            document.getElementById(`chatMain_${winId}`).style.display = 'none';
+            document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
+            
+            // Password အဟောင်း ကျန်မနေစေရန် ရှင်းလင်းမည်
+            document.getElementById(`loginPass_${winId}`).value = '';
+        };
+
         // --- မျက်နှာပြင် အပြောင်းအလဲလုပ်သည့် Function ---
         window.toggleAuthView = function(winId, view) {
             document.getElementById(`chatLogin_${winId}`).style.display = (view === 'login') ? 'flex' : 'none';
