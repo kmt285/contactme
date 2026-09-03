@@ -29,35 +29,65 @@ const Message = mongoose.model('Message', MessageSchema);
 
 // --- Chat User Schema (MongoDB တွင်သိမ်းရန်) ---
 const ChatUserSchema = new mongoose.Schema({ 
-    device_id: { type: String, required: true, unique: true }, // ဖုန်း/Browser ၏ အသေ ID
-    username: { type: String, required: true, unique: true },  // System မှ ပေးသော အသေ ID (ဥပမာ user_1A2B)
-    display_name: { type: String, required: true },            // User စိတ်ကြိုက်ပေးသော နာမည်
+    username: { type: String, required: true, unique: true },  // e.g., aung285 (Unique)
+    password: { type: String, required: true },                // Hashed Password
+    display_name: { type: String, required: true },            // စိတ်ကြိုက်ပြောင်းနိုင်သော နာမည်
     createdAt: { type: Date, default: Date.now } 
 });
 const ChatUser = mongoose.model('ChatUser', ChatUserSchema);
 
-// --- Chat Room ထဲမဝင်ခင် နာမည်စာရင်းသွင်းမည့် API ---
-app.post('/api/chat-join', async (req, res) => {
+// --- ၁။ Chat Account အသစ်ဖွင့်ခြင်း (Signup) ---
+app.post('/api/chat-signup', async (req, res) => {
     try {
-        const { device_id, display_name } = req.body;
+        const { display_name, username, password } = req.body;
         
-        // မိမိ Device ID ဖြင့် DB တွင် မှတ်ထားပြီးသား ရှိမရှိစစ်မည်
-        let user = await ChatUser.findOne({ device_id });
-        
-        if (user) {
-            // ရှိပြီးသားဆိုလျှင် Display Name ကိုသာ Update လုပ်ပေးမည် (DB မပွားတော့ပါ)
-            user.display_name = display_name;
-            await user.save();
-        } else {
-            // အသစ်ဖြစ်နေလျှင် Random Username တစ်ခု (ဥပမာ - user_A9F2) ဖန်တီး၍ မှတ်မည်
-            const randomId = "user_" + Math.random().toString(36).substring(2, 6).toUpperCase();
-            user = await new ChatUser({ device_id, username: randomId, display_name }).save();
+        // Username သည် စာလုံးအသေးနှင့် ဂဏန်းသာဖြစ်ရမည်ကို Backend တွင် ထပ်စစ်ခြင်း
+        if (!/^[a-z0-9]+$/.test(username)) {
+            return res.status(400).json({ success: false, message: "Username must contain only small letters and numbers." });
+        }
+
+        // DB တွင် Username တူတာရှိပြီးသားလား စစ်ဆေးခြင်း
+        const existingUser = await ChatUser.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: "ဤ Username အား အခြားသူ အသုံးပြုထားပါသည်။" });
         }
         
-        // User ထံသို့ System ကပေးလိုက်သော username နှင့် display_name ကို ပြန်ပို့မည်
-        res.status(200).json({ success: true, username: user.username, display_name: user.display_name });
+        // Password အား Encryption (Hash) လုပ်၍ လုံခြုံစွာသိမ်းခြင်း
+        const hashedPassword = CryptoJS.SHA256(password).toString();
+        await new ChatUser({ username, password: hashedPassword, display_name }).save();
+        
+        res.status(200).json({ success: true });
     } catch (error) { 
         res.status(500).json({ success: false, error: "Database Error" }); 
+    }
+});
+
+// --- ၂။ Chat Login ဝင်ခြင်း ---
+app.post('/api/chat-login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const hashedPassword = CryptoJS.SHA256(password).toString();
+        
+        const user = await ChatUser.findOne({ username, password: hashedPassword });
+        
+        if (user) {
+            res.status(200).json({ success: true, display_name: user.display_name, username: user.username });
+        } else {
+            res.status(401).json({ success: false, message: "Username သို့မဟုတ် Password မှားယွင်းနေပါသည်။" });
+        }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Database Error" }); 
+    }
+});
+
+// --- ၃။ Display Name အသစ်ပြောင်းခြင်း ---
+app.post('/api/chat-update-name', async (req, res) => {
+    try {
+        const { username, display_name } = req.body;
+        await ChatUser.findOneAndUpdate({ username }, { display_name });
+        res.status(200).json({ success: true });
+    } catch (error) { 
+        res.status(500).json({ success: false }); 
     }
 });
 
