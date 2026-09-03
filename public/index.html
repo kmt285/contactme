@@ -617,7 +617,7 @@
             } else if(item.type === 'chat') {
                 contentArea.innerHTML = `
                     <!-- Login Screen -->
-                    <div id="chatLogin_${winId}" style="padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                    <div id="chatLogin_${winId}" style="padding: 20px; background:var(--win-bg); flex: 1; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
                         <h3 style="margin-top:0; margin-bottom: 20px;">System Login</h3>
                         <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
                             <div style="display: flex; height: 30px;">
@@ -631,7 +631,7 @@
                     </div>
 
                     <!-- Signup Screen -->
-                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:var(--win-bg); flex: 1; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
                         <h3 style="margin-top:0; margin-bottom: 20px;">Create Account</h3>
                         <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
                             <input type="text" id="regDisplayName_${winId}" placeholder="Display Name (e.g. John Doe)" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 30px;" maxlength="20">
@@ -647,7 +647,7 @@
                     </div>
 
                     <!-- Chat Room Screen -->
-                    <div id="chatMain_${winId}" style="display: none; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
+                    <div id="chatMain_${winId}" style="display: none; flex-direction: column; flex: 1; background: #000; border: inset 2px; box-sizing: border-box;">
                         <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between; align-items:center;">
                             <span>*** Topic for #global ***</span>
                             <div>
