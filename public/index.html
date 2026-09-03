@@ -1005,8 +1005,12 @@
                 const safeUsername = escapeHTML(data.username || "unknown");
                 let safeMessage = escapeHTML(data.message || "");
 
+                // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း ---
                 const myUsername = localStorage.getItem('chatUsername') || "";
                 let isMentionedMe = false;
+                
+                // 🚨 ကိုယ်တိုင် ပို့ထားတဲ့ စာလားဆိုတာ စစ်ဆေးခြင်း
+                const isMyMessage = (safeUsername === myUsername);
 
                 safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
                     if (myUsername && mentionedUser === myUsername) {
@@ -1017,7 +1021,8 @@
                 });
 
                 const msgDiv = document.createElement('div');
-                msgDiv.style.marginBottom = "3px";
+                msgDiv.style.marginBottom = "5px"; // စာကြောင်းများကြား နည်းနည်း ပိုခွာပေးမည်
+                msgDiv.style.lineHeight = "1.4";
                 
                 if (isMentionedMe) {
                     msgDiv.style.background = "rgba(255, 255, 0, 0.15)";
@@ -1025,7 +1030,22 @@
                     msgDiv.style.paddingLeft = "5px";
                 }
 
-                msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeUsername} '">&lt;${safeDisplayName} <small style="color:#888;">@${safeUsername}</small>&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
+                // --- 🎨 အရောင်ခွဲခြားခြင်း (Retro Style ကိုမပျက်စေဘဲ) ---
+                // ကိုယ့်နာမည်ဆိုရင် Cyan ပြာစိမ်း၊ သူများနာမည်ဆိုရင် Gold ရွှေဝါရောင်
+                const nameColor = isMyMessage ? '#00ffff' : '#ffb000'; 
+                // ကိုယ်ပို့တဲ့စာကို အဖြူရောင်ပြမည်၊ သူများစာကို အစိမ်းရောင်ပြမည်
+                const textColor = isMyMessage ? '#ffffff' : '#00ff00';
+                // @username အသေ ID ကို မျက်စိမရှုပ်အောင် မှိန်ထားမည်
+                const tagStyle = "color: #666; font-size: 11px; font-weight: normal;";
+
+                // 🚨 UI အသစ်ဖြင့် ထည့်သွင်းခြင်း
+                msgDiv.innerHTML = `
+                    <span style="color: #555;">[${timeStr}]</span> 
+                    <b style="color: ${nameColor}; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeUsername} '">
+                        &lt;${safeDisplayName} <span style="${tagStyle}">@${safeUsername}</span>&gt;
+                    </b> 
+                    <span style="color: ${textColor}; word-break: break-word; margin-left: 5px;">${safeMessage}</span>
+                `;
                 
                 msgBox.appendChild(msgDiv);
                 msgBox.scrollTop = msgBox.scrollHeight;
