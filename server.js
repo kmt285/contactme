@@ -29,26 +29,36 @@ const Message = mongoose.model('Message', MessageSchema);
 
 // --- Chat User Schema (MongoDB တွင်သိမ်းရန်) ---
 const ChatUserSchema = new mongoose.Schema({ 
-    username: { type: String, required: true },
-    tag: { type: String, required: true },
-    fullId: { type: String, required: true, unique: true }, // e.g., AungAung#13556
+    username: { type: String, required: true, unique: true }, // Name ကိုပဲ Unique ဖြစ်အောင်ထားမည်
+    owner_secret: { type: String, required: true }, // ဤနာမည်ကို ပိုင်ဆိုင်သော Device ၏ Secret Key
     createdAt: { type: Date, default: Date.now } 
 });
 const ChatUser = mongoose.model('ChatUser', ChatUserSchema);
 
-// --- Chat User Register API ---
-app.post('/api/register-chat-user', async (req, res) => {
+// --- Chat Username ကို ရယူ/စစ်ဆေးမည့် API ---
+app.post('/api/claim-username', async (req, res) => {
     try {
-        const { username, tag } = req.body;
-        const fullId = `${username}#${tag}`;
+        const { username, secret } = req.body;
         
-        // ရှိပြီးသားလား စစ်ဆေးမည်
-        const existingUser = await ChatUser.findOne({ fullId });
-        if (!existingUser) {
-            // မရှိသေးရင် အသစ်မှတ်မည်
-            await new ChatUser({ username, tag, fullId }).save();
+        // Backend တွင်လည်း a-z, 0-9 သာပါဝင်ကြောင်း ထပ်စစ်မည်
+        if (!/^[a-zA-Z0-9_]{3,15}$/.test(username)) {
+            return res.status(400).json({ success: false, message: "Invalid format" });
         }
-        res.status(200).json({ success: true, fullId });
+
+        const existingUser = await ChatUser.findOne({ username: { $regex: new RegExp("^" + username + "$", "i") } }); // Case-insensitive စစ်ဆေးခြင်း
+
+        if (existingUser) {
+            // နာမည်ရှိပြီးသားဖြစ်နေလျှင် မိမိ Device မှ ဟုတ်မဟုတ် စစ်ဆေးမည်
+            if (existingUser.owner_secret === secret) {
+                return res.status(200).json({ success: true }); // မိမိပိုင်ဆိုင်သော နာမည်ဖြစ်၍ ခွင့်ပြုသည်
+            } else {
+                return res.status(403).json({ success: false, message: "Taken" }); // အခြားသူယူထားသည်
+            }
+        } else {
+            // မည်သူမှ မယူရသေးပါက အသစ်မှတ်မည်
+            await new ChatUser({ username, owner_secret: secret }).save();
+            return res.status(200).json({ success: true });
+        }
     } catch (error) { 
         res.status(500).json({ success: false, error: "Database Error" }); 
     }
