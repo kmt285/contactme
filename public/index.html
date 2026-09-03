@@ -615,86 +615,37 @@
                 `;
 
             } else if(item.type === 'chat') {
-                // --- 🚨 ပျောက်သွားသော Chat Room HTML UI ဒီဇိုင်းကုဒ်များ ---
                 contentArea.innerHTML = `
-                    <div style="display: flex; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
-                        
-                        <!-- IRC Status Bar -->
-                        <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555;">
-                            *** Topic for #global: Welcome to the underground network ***
+                    <!-- ဝင်ဝင်ချင်း နာမည်တောင်းမည့် မျက်နှာပြင် -->
+                    <div id="chatSetup_${winId}" style="padding: 20px; background:var(--win-bg); height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0;">🌐 Global Chat</h3>
+                        <p style="font-size: 13px; color: #555; text-align:center;">Chat အသုံးပြုရန် Display Name တစ်ခုပေးပါ။<br>(နောက်ပိုင်း အချိန်မရွေး ပြန်ပြောင်းနိုင်ပါသည်။)</p>
+                        <input type="text" id="setupName_${winId}" placeholder="e.g. Aung Aung" style="width: 200px; margin-bottom: 10px; text-align:center;" maxlength="20">
+                        <button class="action-btn" style="width: 200px;" onclick="joinChat('${winId}')">Enter Chat</button>
+                    </div>
+
+                    <!-- Chat Room မျက်နှာပြင် (စစချင်း ဖျောက်ထားမည်) -->
+                    <div id="chatMain_${winId}" style="display: none; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
+                        <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between;">
+                            <span>*** Topic for #global: Welcome ***</span>
+                            <span id="myUserIdInfo_${winId}" style="color:yellow; font-size: 11px;"></span>
                         </div>
                         
-                        <!-- Hacker Style Chat Box -->
                         <div id="chatMessages_${winId}" style="flex: 1; background: #000; color: #00ff00; overflow-y: auto; padding: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.5; text-shadow: 0 0 3px rgba(0,255,0,0.3);">
-                            <div style="color: #888;">* Connecting to proxy...</div>
-                            <div style="color: #888;">* Resolving host... connected.</div>
-                            <div style="color: #888;">* Joining channel #global...</div>
+                            <div style="color: #888;">* Welcome to Global Network...</div>
                         </div>
                         
-                        <!-- Terminal Input Area -->
                         <div style="display: flex; border-top: 1px dashed #333; padding: 5px; background: #000; align-items: center;">
                             <span style="color: #00ff00; font-family: 'Courier New', monospace; font-weight:bold; margin-right:5px;">&gt;</span>
-                            <input type="text" id="chatName_${winId}" placeholder="nick" style="width: 70px; background: transparent; border: none; border-bottom: 1px dotted #00ff00; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px; font-weight: bold;" maxlength="10">
+                            <input type="text" id="chatName_${winId}" title="Display Name (You can change this)" style="width: 100px; background: transparent; border: none; border-bottom: 1px dotted #00ff00; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px; font-weight: bold;" maxlength="20">
                             <span style="color: #00ff00; font-family: 'Courier New', monospace; margin: 0 5px;">:</span>
-                            <input type="text" id="chatInput_${winId}" placeholder="type command or message..." style="flex: 1; background: transparent; border: none; color: #00ff00; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px;" autocomplete="off" onkeypress="if(event.key === 'Enter') sendChatMessage('${winId}')">
+                            <input type="text" id="chatInput_${winId}" placeholder="type message..." style="flex: 1; background: transparent; border: none; color: #00ff00; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px;" autocomplete="off" onkeypress="if(event.key === 'Enter') sendChatMessage('${winId}')">
                         </div>
                     </div>
                 `;
-                
-                // ကိုယ်ပိုင် ID သတ်မှတ်ခြင်း (Device ID သဘောတရား)
-                let userTag = localStorage.getItem('chatUserTag');
-                if (!userTag) {
-                    userTag = Math.floor(10000 + Math.random() * 90000).toString(); // ဂဏန်း ၅ လုံး (ဥပမာ 13556)
-                    localStorage.setItem('chatUserTag', userTag);
-                }
-                
-                let savedName = localStorage.getItem('chatUsername') || '';
-                document.getElementById(`chatName_${winId}`).value = savedName;
 
-                // --- Tab ဖွင့်သည့်အချိန်ကစပြီး ဝင်လာသောစာများကိုသာ ယူမည် (History ဖျောက်ခြင်း) ---
-                const sessionStartTime = Date.now(); 
-                const chatRef = window.ref(window.db, 'global_chat');
-                const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
-
-                const msgBox = document.getElementById(`chatMessages_${winId}`);
-
-                window.onChildAdded(liveChatQuery, (snapshot) => {
-                    const data = snapshot.val();
-                    const d = new Date(data.timestamp || Date.now());
-                    const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
-                    
-                    const safeName = escapeHTML(data.name || "Anonymous");
-                    let safeMessage = escapeHTML(data.message || "");
-
-                    // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း (Tag မပါတော့ပါ) ---
-                    const myUsername = localStorage.getItem('chatUsername') || "";
-                    let isMentionedMe = false;
-
-                    // Message ထဲမှာ @Username ပါလာရင် အရောင်ပြောင်းမည်
-                    safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
-                        // စာလုံးအကြီးအသေးမရွေး (Case Insensitive) စစ်ဆေးမည်
-                        if (myUsername && mentionedUser.toLowerCase() === myUsername.toLowerCase()) {
-                            isMentionedMe = true;
-                            return `<span style="background: yellow; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">${match}</span>`;
-                        }
-                        return `<span style="color: #ffaa00; font-weight: bold;">${match}</span>`;
-                    });
-
-                    const msgDiv = document.createElement('div');
-                    msgDiv.style.marginBottom = "3px";
-                    
-                    // ကိုယ့်ကို Mention ခေါ်ထားရင် နောက်ခံအရောင် မှိန်မှိန်လေးပြမည်
-                    if (isMentionedMe) {
-                        msgDiv.style.background = "rgba(255, 255, 0, 0.15)";
-                        msgDiv.style.borderLeft = "3px solid yellow";
-                        msgDiv.style.paddingLeft = "5px";
-                    }
-
-                    msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeName} '">&lt;${safeName}&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
-
-                    msgBox.appendChild(msgDiv);
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                });
+                // ယခင်က နာမည်ပေးထားဖူးပါက ကြိုထည့်ပေးထားမည်
+                document.getElementById(`setupName_${winId}`).value = localStorage.getItem('chatDisplayName') || '';
                 
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
@@ -932,61 +883,137 @@
 
         loadDesktop();
 
-        async function sendChatMessage(winId) {
-            const nameInput = document.getElementById(`chatName_${winId}`);
-            const msgInput = document.getElementById(`chatInput_${winId}`);
-            const username = nameInput.value.trim();
-            const message = msgInput.value.trim();
+        // --- ၁။ Chat Room သို့ ဝင်ရောက်ခြင်း ---
+        window.joinChat = async function(winId) {
+            const setupNameInput = document.getElementById(`setupName_${winId}`);
+            const displayName = setupNameInput.value.trim();
+            
+            if (!displayName) return customAlert("Display Name ထည့်သွင်းပေးပါ။", "Error");
 
-            if (!message) return; 
-
-            // --- ၁။ Username Format စစ်ဆေးခြင်း (a-z, 0-9, _, ၃ လုံးမှ ၁၅ လုံး) ---
-            if (!/^[a-zA-Z0-9_]{3,15}$/.test(username)) {
-                customAlert("Username သည် အင်္ဂလိပ်စာလုံး၊ ဂဏန်း၊ နှင့် _ (underscore) သာပါဝင်ရမည်။<br>အနည်းဆုံး ၃ လုံးမှ ၁၅ လုံးအတွင်း ဖြစ်ရမည်။", "Invalid Username");
-                return;
+            // Device ID ကို ရှာမည် (သို့) ဖန်တီးမည်
+            let deviceId = localStorage.getItem('deviceSecret');
+            if (!deviceId) {
+                deviceId = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+                localStorage.setItem('deviceSecret', deviceId);
             }
 
-            // --- ၂။ Spam ကာကွယ်ရေး (Cooldown ၃ စက္ကန့်) ---
+            const btn = setupNameInput.nextElementSibling;
+            btn.innerText = "Connecting..."; btn.disabled = true;
+
+            try {
+                // MongoDB သို့ မှတ်ပုံတင်ခြင်း/Update လုပ်ခြင်း
+                const res = await fetch('/api/chat-join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId, display_name: displayName })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    localStorage.setItem('chatDisplayName', data.display_name);
+                    localStorage.setItem('chatUsername', data.username); // System မှ ချပေးသော ID (ဥပမာ user_1A2B)
+
+                    // မျက်နှာပြင် ပြောင်းလဲခြင်း
+                    document.getElementById(`chatSetup_${winId}`).style.display = 'none';
+                    document.getElementById(`chatMain_${winId}`).style.display = 'flex';
+                    document.getElementById(`chatName_${winId}`).value = data.display_name;
+                    document.getElementById(`myUserIdInfo_${winId}`).innerText = `Your ID: @${data.username}`;
+
+                    // Firebase ဖြင့် စာများစတင်ဖတ်ခြင်း
+                    initChatListener(winId);
+                } else {
+                    customAlert("Failed to join chat server.", "Error");
+                }
+            } catch(e) {
+                customAlert("Network error. VPN လိုအပ်နိုင်ပါသည်။", "Connection Failed");
+            }
+            btn.innerText = "Enter Chat"; btn.disabled = false;
+        };
+
+        // --- ၂။ Firebase မှ စာများကို ဖမ်းယူခြင်း ---
+        function initChatListener(winId) {
+            const sessionStartTime = Date.now(); 
+            const chatRef = window.ref(window.db, 'global_chat');
+            const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
+            const msgBox = document.getElementById(`chatMessages_${winId}`);
+
+            window.onChildAdded(liveChatQuery, (snapshot) => {
+                const data = snapshot.val();
+                const d = new Date(data.timestamp || Date.now());
+                const timeStr = d.toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                
+                const safeDisplayName = escapeHTML(data.displayName || "Anonymous");
+                const safeUsername = escapeHTML(data.username || "unknown"); // အသေ ID
+                let safeMessage = escapeHTML(data.message || "");
+
+                const myUsername = localStorage.getItem('chatUsername') || "";
+                let isMentionedMe = false;
+
+                // Mention စစ်ဆေးခြင်း (ID ဖြင့်သာ Mention ခေါ်ရမည် - ဥပမာ @user_1A2B)
+                safeMessage = safeMessage.replace(/@([a-zA-Z0-9_]+)/g, (match, mentionedUser) => {
+                    if (myUsername && mentionedUser === myUsername) {
+                        isMentionedMe = true;
+                        return `<span style="background: yellow; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">${match}</span>`;
+                    }
+                    return `<span style="color: #ffaa00; font-weight: bold;">${match}</span>`;
+                });
+
+                const msgDiv = document.createElement('div');
+                msgDiv.style.marginBottom = "3px";
+                
+                if (isMentionedMe) {
+                    msgDiv.style.background = "rgba(255, 255, 0, 0.15)";
+                    msgDiv.style.borderLeft = "3px solid yellow";
+                    msgDiv.style.paddingLeft = "5px";
+                }
+
+                // UI ပေါ်တွင် - [12:00:00] <Aung Aung @user_1A2B> Hello ဟု ပြမည်
+                msgDiv.innerHTML = `<span style="color: #555;">[${timeStr}]</span> <b style="color: #00ffff; cursor: pointer;" onclick="document.getElementById('chatInput_${winId}').value += ' @${safeUsername} '">&lt;${safeDisplayName} <small style="color:#888;">@${safeUsername}</small>&gt;</b> <span style="word-break: break-word;">${safeMessage}</span>`;
+                
+                msgBox.appendChild(msgDiv);
+                msgBox.scrollTop = msgBox.scrollHeight;
+            });
+        }
+
+        // --- ၃။ စာပို့ခြင်း ---
+        window.sendChatMessage = async function(winId) {
+            const nameInput = document.getElementById(`chatName_${winId}`);
+            const msgInput = document.getElementById(`chatInput_${winId}`);
+            
+            const displayName = nameInput.value.trim() || "Anonymous";
+            const message = msgInput.value.trim();
+            const username = localStorage.getItem('chatUsername'); // System မှ ပေးထားသော အသေ ID
+            const deviceId = localStorage.getItem('deviceSecret');
+
+            if (!message || !username) return; 
+
+            // Spam ကာကွယ်ရေး
             const lastMsgTime = localStorage.getItem('lastMsgTime') || 0;
             if (Date.now() - lastMsgTime < 3000) { 
                 customAlert("ကျေးဇူးပြု၍ စာတစ်စောင်နှင့် တစ်စောင်ကြား (၃) စက္ကန့်စောင့်ပေးပါ။", "Spam Protection");
                 return;
             }
 
-            // --- ၃။ Device Secret ဖန်တီးခြင်း (ဤဖုန်း/ကွန်ပျူတာ၏ သီးသန့် ID) ---
-            let deviceSecret = localStorage.getItem('deviceSecret');
-            if (!deviceSecret) {
-                deviceSecret = Math.random().toString(36).substring(2) + Date.now().toString(36);
-                localStorage.setItem('deviceSecret', deviceSecret);
+            // Chat ထဲရောက်မှ Display Name ထပ်ပြောင်းခဲ့လျှင် နောက်ကွယ်မှ Server သို့ Update လှမ်းလုပ်ပေးမည်
+            if (displayName !== localStorage.getItem('chatDisplayName')) {
+                localStorage.setItem('chatDisplayName', displayName);
+                fetch('/api/chat-join', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ device_id: deviceId, display_name: displayName }) 
+                }).catch(e => console.log("Silent update failed"));
             }
 
             msgInput.disabled = true;
             msgInput.placeholder = "Sending...";
 
             try {
-                // --- ၄။ MongoDB သို့ Username ရယူခွင့်ပြုရန် တောင်းဆိုခြင်း ---
-                const claimRes = await fetch('/api/claim-username', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: username, secret: deviceSecret })
-                });
-                const claimData = await claimRes.json();
-
-                // အခြားသူ ယူထားပြီးသား နာမည်ဖြစ်နေလျှင်
-                if (!claimData.success) {
-                    customAlert(`<b>${username}</b> ဆိုသည့် နာမည်အား အခြားသူတစ်ဦးမှ အသုံးပြုနေပါသည်။<br>ကျေးဇူးပြု၍ နာမည်အသစ်တစ်ခု ပြောင်းလဲအသုံးပြုပါ။`, "Username Taken");
-                    msgInput.disabled = false;
-                    msgInput.placeholder = "type command or message...";
-                    return;
-                }
-
-                // အောင်မြင်ပါက Username ကို မှတ်ထားမည်
-                localStorage.setItem('chatUsername', username);
-
-                // --- ၅။ Firebase သို့ စာပို့ခြင်း ---
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+                
+                // Firebase သို့ Display Name ရော၊ Unique Username ပါ ပို့မည်
                 const pushPromise = window.push(window.ref(window.db, 'global_chat'), {
-                    name: username, // Random Tag မပါတော့ပါ
+                    displayName: displayName,
+                    username: username, 
                     message: message,
                     timestamp: window.serverTimestamp()
                 });
@@ -995,15 +1022,14 @@
 
                 localStorage.setItem('lastMsgTime', Date.now());
                 msgInput.value = ''; 
-                
             } catch (error) {
                 customAlert("⚠️ ဆာဗာနှင့် ချိတ်ဆက်၍မရပါ။ VPN လိုအပ်နိုင်ပါသည်။", "Connection Failed");
             } finally {
                 msgInput.disabled = false;
-                msgInput.placeholder = "type command or message...";
+                msgInput.placeholder = "type message...";
                 msgInput.focus();
             }
-        }
+        };
     </script>
 </body>
 </html>
