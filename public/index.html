@@ -615,7 +615,31 @@
                 `;
 
             } else if(item.type === 'chat') {
-                // ... (မူလ HTML UI အပိုင်း အတိုင်းထားပါ) ...
+                // --- 🚨 ပျောက်သွားသော Chat Room HTML UI ဒီဇိုင်းကုဒ်များ ---
+                contentArea.innerHTML = `
+                    <div style="display: flex; flex-direction: column; height: 100%; background: #000; border: inset 2px; box-sizing: border-box;">
+                        
+                        <!-- IRC Status Bar -->
+                        <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555;">
+                            *** Topic for #global: Welcome to the underground network ***
+                        </div>
+                        
+                        <!-- Hacker Style Chat Box -->
+                        <div id="chatMessages_${winId}" style="flex: 1; background: #000; color: #00ff00; overflow-y: auto; padding: 8px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.5; text-shadow: 0 0 3px rgba(0,255,0,0.3);">
+                            <div style="color: #888;">* Connecting to proxy...</div>
+                            <div style="color: #888;">* Resolving host... connected.</div>
+                            <div style="color: #888;">* Joining channel #global...</div>
+                        </div>
+                        
+                        <!-- Terminal Input Area -->
+                        <div style="display: flex; border-top: 1px dashed #333; padding: 5px; background: #000; align-items: center;">
+                            <span style="color: #00ff00; font-family: 'Courier New', monospace; font-weight:bold; margin-right:5px;">&gt;</span>
+                            <input type="text" id="chatName_${winId}" placeholder="nick" style="width: 70px; background: transparent; border: none; border-bottom: 1px dotted #00ff00; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px; font-weight: bold;" maxlength="10">
+                            <span style="color: #00ff00; font-family: 'Courier New', monospace; margin: 0 5px;">:</span>
+                            <input type="text" id="chatInput_${winId}" placeholder="type command or message..." style="flex: 1; background: transparent; border: none; color: #00ff00; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px;" autocomplete="off" onkeypress="if(event.key === 'Enter') sendChatMessage('${winId}')">
+                        </div>
+                    </div>
+                `;
                 
                 // ကိုယ်ပိုင် ID သတ်မှတ်ခြင်း (Device ID သဘောတရား)
                 let userTag = localStorage.getItem('chatUserTag');
@@ -627,7 +651,7 @@
                 let savedName = localStorage.getItem('chatUsername') || '';
                 document.getElementById(`chatName_${winId}`).value = savedName;
 
-                // --- 🚨 Tab ဖွင့်သည့်အချိန်ကစပြီး ဝင်လာသောစာများကိုသာ ယူမည် (History ဖျောက်ခြင်း) ---
+                // --- Tab ဖွင့်သည့်အချိန်ကစပြီး ဝင်လာသောစာများကိုသာ ယူမည် (History ဖျောက်ခြင်း) ---
                 const sessionStartTime = Date.now(); 
                 const chatRef = window.ref(window.db, 'global_chat');
                 const liveChatQuery = window.query(chatRef, window.orderByChild('timestamp'), window.startAt(sessionStartTime));
@@ -642,7 +666,7 @@
                     const safeName = escapeHTML(data.name || "Anonymous");
                     let safeMessage = escapeHTML(data.message || "");
 
-                    // --- 🚨 Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း ---
+                    // --- Mention ခေါ်ခြင်းကို စစ်ဆေးခြင်း ---
                     const myFullId = (localStorage.getItem('chatUsername') || "Anonymous") + "#" + localStorage.getItem('chatUserTag');
                     let isMentionedMe = false;
 
