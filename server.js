@@ -29,36 +29,33 @@ const Message = mongoose.model('Message', MessageSchema);
 
 // --- Chat User Schema (MongoDB တွင်သိမ်းရန်) ---
 const ChatUserSchema = new mongoose.Schema({ 
-    username: { type: String, required: true, unique: true }, // Name ကိုပဲ Unique ဖြစ်အောင်ထားမည်
-    owner_secret: { type: String, required: true }, // ဤနာမည်ကို ပိုင်ဆိုင်သော Device ၏ Secret Key
+    device_id: { type: String, required: true, unique: true }, // ဖုန်း/Browser ၏ အသေ ID
+    username: { type: String, required: true, unique: true },  // System မှ ပေးသော အသေ ID (ဥပမာ user_1A2B)
+    display_name: { type: String, required: true },            // User စိတ်ကြိုက်ပေးသော နာမည်
     createdAt: { type: Date, default: Date.now } 
 });
 const ChatUser = mongoose.model('ChatUser', ChatUserSchema);
 
-// --- Chat Username ကို ရယူ/စစ်ဆေးမည့် API ---
-app.post('/api/claim-username', async (req, res) => {
+// --- Chat Room ထဲမဝင်ခင် နာမည်စာရင်းသွင်းမည့် API ---
+app.post('/api/chat-join', async (req, res) => {
     try {
-        const { username, secret } = req.body;
+        const { device_id, display_name } = req.body;
         
-        // Backend တွင်လည်း a-z, 0-9 သာပါဝင်ကြောင်း ထပ်စစ်မည်
-        if (!/^[a-zA-Z0-9_]{3,15}$/.test(username)) {
-            return res.status(400).json({ success: false, message: "Invalid format" });
-        }
-
-        const existingUser = await ChatUser.findOne({ username: { $regex: new RegExp("^" + username + "$", "i") } }); // Case-insensitive စစ်ဆေးခြင်း
-
-        if (existingUser) {
-            // နာမည်ရှိပြီးသားဖြစ်နေလျှင် မိမိ Device မှ ဟုတ်မဟုတ် စစ်ဆေးမည်
-            if (existingUser.owner_secret === secret) {
-                return res.status(200).json({ success: true }); // မိမိပိုင်ဆိုင်သော နာမည်ဖြစ်၍ ခွင့်ပြုသည်
-            } else {
-                return res.status(403).json({ success: false, message: "Taken" }); // အခြားသူယူထားသည်
-            }
+        // မိမိ Device ID ဖြင့် DB တွင် မှတ်ထားပြီးသား ရှိမရှိစစ်မည်
+        let user = await ChatUser.findOne({ device_id });
+        
+        if (user) {
+            // ရှိပြီးသားဆိုလျှင် Display Name ကိုသာ Update လုပ်ပေးမည် (DB မပွားတော့ပါ)
+            user.display_name = display_name;
+            await user.save();
         } else {
-            // မည်သူမှ မယူရသေးပါက အသစ်မှတ်မည်
-            await new ChatUser({ username, owner_secret: secret }).save();
-            return res.status(200).json({ success: true });
+            // အသစ်ဖြစ်နေလျှင် Random Username တစ်ခု (ဥပမာ - user_A9F2) ဖန်တီး၍ မှတ်မည်
+            const randomId = "user_" + Math.random().toString(36).substring(2, 6).toUpperCase();
+            user = await new ChatUser({ device_id, username: randomId, display_name }).save();
         }
+        
+        // User ထံသို့ System ကပေးလိုက်သော username နှင့် display_name ကို ပြန်ပို့မည်
+        res.status(200).json({ success: true, username: user.username, display_name: user.display_name });
     } catch (error) { 
         res.status(500).json({ success: false, error: "Database Error" }); 
     }
