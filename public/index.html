@@ -1165,52 +1165,55 @@
         };
 
 window.isSignalListening = false;
+window.alertedSignals = {}; // 💡 Alert ခဏခဏ မထပ်စေရန် မှတ်ထားမည့် နေရာ
 
 window.initSignalListener = function(myUsername) {
     if (window.isSignalListening) return;
     window.isSignalListening = true;
 
     const signalRef = window.ref(window.db, `signals/${myUsername}`);
-    let sessionStartTime = Date.now(); // Login ဝင်ချိန်ကို မှတ်ထားမည်
 
-    // 💡 Data ပြောင်းလဲမှုရှိတိုင်း ချက်ချင်းဖမ်းမည့် onValue ကို သုံးထားသည်
+    // 💡 မိမိနာမည်နဲ့ ဝင်လာသမျှ Unread စာအားလုံး (Offline ရော Online ပါ) ကို ဖမ်းမည်
     window.onValue(signalRef, (snapshot) => {
         const data = snapshot.val();
-        // Data မရှိလျှင် သို့မဟုတ် အချိန်မပါလျှင် ကျော်မည်
-        if (!data || !data.timestamp) return;
+        if (!data) return; // Unread စာမရှိလျှင် ကျော်မည်
 
-        // Login ဝင်ပြီးနောက်မှ ရောက်လာသော Signal အသစ်ဖြစ်မှသာ လက်ခံမည်
-        if (data.timestamp > sessionStartTime) {
-            sessionStartTime = data.timestamp; // နောက်ထပ် Signal အသစ်အတွက် အချိန်ကို Update လုပ်မည်
-            const sender = data.sender;
+        // data ထဲတွင် ပို့ထားသူများ၏ နာမည်နှင့် အချိန်များ ပါဝင်ပါမည် (ဥပမာ - { "aung": 169..., "zaw": 169... })
+        Object.keys(data).forEach(sender => {
+            const signalTime = data[sender];
+            let isAlreadyConnected = false;
 
             // လက်ရှိမှာ အဆိုပါလူနဲ့ စကားပြောဖို့ ဖွင့်ထားပြီးသားလား စစ်ဆေးခြင်း
-            let isAlreadyConnected = false;
             Object.keys(window).forEach(key => {
                 if (key.startsWith('pChatTarget_') && window[key] === sender) {
                     const winId = key.replace('pChatTarget_', '');
                     const winEl = document.getElementById(winId);
                     const mainUI = document.getElementById(`pChatMain_${winId}`);
 
-                    // Window ဖွင့်ထားပြီး Minimize လည်း လုပ်မထားဘူးဆိုမှ Alert မပြဘဲနေမည်
+                    // Window ပွင့်နေတယ်ဆိုရင် Alert မပြတော့ဘဲ Unread ကို အလိုအလျောက်ဖျက်ပါမည်
                     if (winEl && winEl.style.display !== 'none' && mainUI && mainUI.style.display !== 'none') {
                         isAlreadyConnected = true;
+                        window.update(window.ref(window.db, `signals/${myUsername}`), { [sender]: null });
                     }
                 }
             });
 
-            // ချိတ်ဆက်မထားသေးရင် System Alert ပြမည်
+            // ချိတ်ဆက်မထားရသေးဘူးဆိုလျှင် Alert ပြမည်
             if (!isAlreadyConnected) {
-                customAlert(
-                    `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`,
-                    "System Secure Alert"
-                );
+                // ဒီစာအတွက် Alert ပြပြီးသား ဟုတ်မဟုတ် စစ်ဆေးခြင်း
+                if (window.alertedSignals[sender] !== signalTime) {
+                    window.alertedSignals[sender] = signalTime;
+                    customAlert(
+                        `[UNREAD ENCRYPTED MESSAGE]<br><br>Transmission waiting from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger to connect.`,
+                        "Secure Inbox"
+                    );
+                }
             }
-        }
+        });
     });
 };
 
-// 💡 Auto-Starter (Page Refresh လုပ်ရင် အလုပ်လုပ်ဖို့)
+// Auto-Starter (Page Refresh လုပ်ရင် အလုပ်လုပ်ဖို့)
 const checkAndStartListener = setInterval(() => {
     if (window.ref && window.onValue) { 
         const savedUser = localStorage.getItem('chatUsername');
@@ -1315,12 +1318,15 @@ const checkAndStartListener = setInterval(() => {
             `;
 
             document.getElementById(`pChatInput_${winId}`).disabled = false;
+            window.update(window.ref(window.db, `signals/${myUser}`), {
+                [targetUser]: null 
+            });
             document.getElementById(`pChatInput_${winId}`).focus();
 
             const chatRef = window.ref(window.db, `private_chats/${roomID}`);
             const q = window.query(
                 chatRef, 
-                window.orderByChild('timestamp'), 
+                window.orderByKey(),
                 window.limitToLast(50) 
             );
 
@@ -1390,16 +1396,13 @@ const checkAndStartListener = setInterval(() => {
             status: 'sent'
         });
 
-        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
-        const targetUser = window[`pChatTarget_${winId}`];
-        if (targetUser) {
-            // update အစား set ကို သုံးခြင်းဖြင့် Signal ကို အမြဲတမ်း Overwrite လုပ်ပါမည်
-            window.set(window.ref(window.db, `signals/${targetUser}`), {
-                sender: myUser,
-                timestamp: Date.now(), 
-                trigger: Math.random() // Data အသစ်ဖြစ်ကြောင်း Firebase ကို သိစေရန်
-            });
-        }
+        // 💡 Target User ရဲ့ Inbox ထဲကို မိမိနာမည်နဲ့ Unread ဖြစ်ကြောင်း အချိန်မှတ်ထားလိုက်ပါမည်
+            const targetUser = window[`pChatTarget_${winId}`];
+            if (targetUser) {
+                window.update(window.ref(window.db, `signals/${targetUser}`), {
+                    [myUser]: Date.now() 
+                });
+            }
         
     } catch(e) { 
                 customAlert("Transmission failed. Network anomaly detected.", "Error");
