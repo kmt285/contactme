@@ -359,7 +359,8 @@
                     <option value="folder">📁 Folder</option>
                     <option value="link">🔗 Internet Link</option>
                     <option value="app">📧 Application (Contact Form)</option>
-                    <option value="chat">💬 Chat Room</option>
+                    <option value="chat">💬 Global Chat Room</option>
+                    <option value="private_chat">✉️ Private Messenger</option>
                 </select>
                 <b>Title:</b> <input type="text" id="iTitle" placeholder="e.g. My File.txt">
                 <b>Icon (Emoji):</b> <input type="text" id="iIcon" value="📄">
@@ -404,8 +405,9 @@
             document.getElementById('iContentDiv').style.display = (t === 'text') ? 'block' : 'none';
             document.getElementById('iLinkDiv').style.display = (t === 'link') ? 'block' : 'none';
             if(editItemTarget === null) {
-                const iconMap = { text: "📄", folder: "📁", link: "🔗", app: "📧", chat: "💬" };
+                const iconMap = { text: "📄", folder: "📁", link: "🔗", app: "📧", chat: "💬", private_chat: "✉️" };
                 if(t === 'chat') document.getElementById('iTitle').value = "Global Chat";
+                if(t === 'private_chat') document.getElementById('iTitle').value = "Messenger";
                 document.getElementById('iIcon').value = iconMap[t];
                 if(t === 'app') document.getElementById('iTitle').value = "Contact App";
             }
