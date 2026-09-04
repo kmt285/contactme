@@ -209,6 +209,7 @@ app.get('/api/cron/clear-firebase', async (req, res) => {
         
         // ၁။ Global Chat ကို ည ၁၂ နာရီတိုင်း အကုန်ရှင်းလင်းမည်
         await admin.database().ref('global_chat').remove();
+        await admin.database().ref('signals').remove();
         
         // ၂။ Private Chat များကို စစ်ဆေး၍ ရှင်းလင်းမည်
         const privateChatsRef = admin.database().ref('private_chats');
