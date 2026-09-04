@@ -125,6 +125,19 @@
         let activeArrayTarget = null; 
         let editItemTarget = null;
 
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>'"]/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[match];
+            });
+        }
+
         // --- JWT Authentication Flow ---
         let adminToken = sessionStorage.getItem('authToken');
         
@@ -207,7 +220,7 @@
                         <button onclick="promptDeleteMsg('${m.id}')" style="float:right; color:#900; font-size:11px;">Delete</button>
                         <small style="color: #555;"><b>${new Date(m.date).toLocaleString()}</b></small>
                         <hr style="border:0; border-top:1px solid #ccc; margin:8px 0;">
-                        <pre style="margin: 0; white-space: pre-wrap; word-break:break-word; font-family:sans-serif;">${m.content}</pre>
+                        <pre style="margin: 0; white-space: pre-wrap; word-break:break-word; font-family:sans-serif;">${escapeHTML(m.content)}</pre> 
                     </div>
                 `).join('');
             } catch(e) { area.innerHTML = ""; showMessage("Error", "Network connection failed."); }
