@@ -124,6 +124,22 @@ app.post('/api/chat-update-name', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
+// --- ၅။ Username ရှိ/မရှိ စစ်ဆေးခြင်း (Private Chat အတွက်) ---
+app.post('/api/check-user', async (req, res) => {
+    try {
+        const { username } = req.body;
+        // DB ထဲမှာ အဆိုပါ username နဲ့ လူရှိမရှိ ရှာဖွေမည်
+        const user = await ChatUser.findOne({ username });
+        if (user) {
+            res.status(200).json({ success: true, exists: true });
+        } else {
+            res.status(200).json({ success: true, exists: false });
+        }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Database Error" }); 
+    }
+});
+
 // ၄။ Admin Panel Login
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
