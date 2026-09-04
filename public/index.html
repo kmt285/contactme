@@ -143,7 +143,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onChildChanged, serverTimestamp, query, orderByChild, orderByValue, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onValue, serverTimestamp, query, orderByChild, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
@@ -163,7 +163,7 @@
     window.ref = ref;
     window.push = push;
     window.onChildAdded = onChildAdded;
-    window.onChildChanged = onChildChanged; // 💡 အသစ်
+    window.onValue = onValue; // 💡 အသစ်
     window.serverTimestamp = serverTimestamp;
 
     window.query = query;
@@ -1162,61 +1162,57 @@
             });
         };
 
-// 💡 Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener အသစ် (Time Issue ဖြေရှင်းထားသည်)
-window.isSignalListening = false; 
+window.isSignalListening = false;
 
 window.initSignalListener = function(myUsername) {
-    if (window.isSignalListening) return; 
+    if (window.isSignalListening) return;
     window.isSignalListening = true;
 
-    let isInitialLoad = true; // 💡 အချိန် (Timestamp) အစား Initial Load ကိုကျော်မည့်နည်း
     const signalRef = window.ref(window.db, `signals/${myUsername}`);
-    
-    // နောက်ဆုံးဝင်လာတဲ့ ၁ ခုကိုပဲ စောင့်ဖမ်းမယ် (အချိန်လွဲချော်မှု ပြဿနာ လုံးဝမရှိတော့ပါ)
-    const q = window.query(signalRef, window.limitToLast(1));
-    
-    window.onChildAdded(q, (snapshot) => {
-        if (isInitialLoad) return; // Page စစဖွင့်ချင်း Data အဟောင်းတွေကို ကျော်ချမည်
-        
-        const data = snapshot.val();
-        if (!data || !data.sender) return;
-        const sender = data.sender; 
-        
-        let isAlreadyConnected = false;
-        Object.keys(window).forEach(key => {
-            if (key.startsWith('pChatTarget_') && window[key] === sender) {
-                const winId = key.replace('pChatTarget_', '');
-                const winEl = document.getElementById(winId);
-                const mainUI = document.getElementById(`pChatMain_${winId}`);
-                
-                // Window ပိတ်မထားဘူး၊ Minimize လုပ်မထားဘူးဆိုမှ Alert မပြဘဲနေမည်
-                if (winEl && winEl.style.display !== 'none' && mainUI && mainUI.style.display !== 'none') {
-                    isAlreadyConnected = true;
-                }
-            }
-        });
+    let sessionStartTime = Date.now(); // Login ဝင်ချိန်ကို မှတ်ထားမည်
 
-        // ချိတ်ဆက်မထားသေးရင် Alert တက်လာပါမည်
-        if (!isAlreadyConnected) {
-            customAlert(
-                `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`, 
-                "System Secure Alert"
-            );
+    // 💡 Data ပြောင်းလဲမှုရှိတိုင်း ချက်ချင်းဖမ်းမည့် onValue ကို သုံးထားသည်
+    window.onValue(signalRef, (snapshot) => {
+        const data = snapshot.val();
+        // Data မရှိလျှင် သို့မဟုတ် အချိန်မပါလျှင် ကျော်မည်
+        if (!data || !data.timestamp) return;
+
+        // Login ဝင်ပြီးနောက်မှ ရောက်လာသော Signal အသစ်ဖြစ်မှသာ လက်ခံမည်
+        if (data.timestamp > sessionStartTime) {
+            sessionStartTime = data.timestamp; // နောက်ထပ် Signal အသစ်အတွက် အချိန်ကို Update လုပ်မည်
+            const sender = data.sender;
+
+            // လက်ရှိမှာ အဆိုပါလူနဲ့ စကားပြောဖို့ ဖွင့်ထားပြီးသားလား စစ်ဆေးခြင်း
+            let isAlreadyConnected = false;
+            Object.keys(window).forEach(key => {
+                if (key.startsWith('pChatTarget_') && window[key] === sender) {
+                    const winId = key.replace('pChatTarget_', '');
+                    const winEl = document.getElementById(winId);
+                    const mainUI = document.getElementById(`pChatMain_${winId}`);
+
+                    // Window ဖွင့်ထားပြီး Minimize လည်း လုပ်မထားဘူးဆိုမှ Alert မပြဘဲနေမည်
+                    if (winEl && winEl.style.display !== 'none' && mainUI && mainUI.style.display !== 'none') {
+                        isAlreadyConnected = true;
+                    }
+                }
+            });
+
+            // ချိတ်ဆက်မထားသေးရင် System Alert ပြမည်
+            if (!isAlreadyConnected) {
+                customAlert(
+                    `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`,
+                    "System Secure Alert"
+                );
+            }
         }
     });
-
-    // ၁.၅ စက္ကန့်ကြာရင် Initial Load ပြီးပြီလို့ သတ်မှတ်ပြီး Alert တွေကို စတင်လက်ခံပါမယ်
-    setTimeout(() => { isInitialLoad = false; }, 1500);
 };
 
-// 💡 Desktop ပေါ်မှာပဲရှိနေရင်တောင် အလုပ်လုပ်စေမယ့် Auto-Starter
+// 💡 Auto-Starter (Page Refresh လုပ်ရင် အလုပ်လုပ်ဖို့)
 const checkAndStartListener = setInterval(() => {
-    // Firebase Load ဖြစ်ပြီးသွားမှ စတင်မည်
-    if (window.ref && window.query) { 
+    if (window.ref && window.onValue) { 
         const savedUser = localStorage.getItem('chatUsername');
-        if (savedUser) {
-            window.initSignalListener(savedUser);
-        }
+        if (savedUser) window.initSignalListener(savedUser);
         clearInterval(checkAndStartListener);
     }
 }, 1000);
@@ -1392,13 +1388,13 @@ const checkAndStartListener = setInterval(() => {
             status: 'sent'
         });
 
-        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
+        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း (Overwrite Method)
         const targetUser = window[`pChatTarget_${winId}`];
         if (targetUser) {
-            // 💡 Update အစား Push ကိုသုံးပြီး Signal အသစ်များအဖြစ် ပို့လွှတ်မည်
-            window.push(window.ref(window.db, `signals/${targetUser}`), {
+            window.update(window.ref(window.db, `signals/${targetUser}`), {
                 sender: myUser,
-                t: window.serverTimestamp() 
+                timestamp: Date.now(), 
+                trigger: Math.random() // Data အသစ်ဖြစ်ကြောင်း Firebase ကို သိစေရန်
             });
         }
         
