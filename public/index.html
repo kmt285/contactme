@@ -685,26 +685,47 @@
             } else if(item.type === 'private_chat') {
                 contentArea.style.overflow = 'hidden';
                 
-                // Login ဝင်ထားခြင်း ရှိမရှိ စစ်ဆေးမည် (Shared Auth)
-                if (!localStorage.getItem('chatUsername')) {
-                    contentArea.innerHTML = `
-                        <div style="padding:20px; text-align:center; background:#000; color:#00ff00; font-family:'Courier New', monospace; flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                            <h2 style="margin-top:0; color:#ff0000; text-shadow: 0 0 5px red;">[ ACCESS DENIED ]</h2>
-                            <p style="font-size:14px; margin-bottom:20px;">AUTHENTICATION REQUIRED TO ACCESS SECURE CHANNEL.</p>
-                            <button onclick="customAlert('Please open the [Global Chat] app from the desktop to Login or Create an account first.', 'Login Required')" style="background:transparent; border:1px solid #00ff00; color:#00ff00; padding:5px 20px; cursor:pointer; font-family:'Courier New', monospace;">&gt; INITIATE LOGIN</button>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Terminal ပုံစံ Private Messenger UI
-                const myUser = localStorage.getItem('chatUsername');
+                // Terminal ပုံစံ Login, Signup နှင့် Private Messenger UI
                 contentArea.innerHTML = `
-                    <div style="display:flex; flex-direction:column; height:100%; background:#000; box-sizing:border-box; border: inset 2px;">
+                    <!-- Login Screen (Terminal Theme) -->
+                    <div id="chatLogin_${winId}" style="padding: 20px; background:#000; color:#00ff00; font-family:'Courier New', monospace; flex: 1; min-height: 0; box-sizing:border-box; display:none; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0; margin-bottom: 20px; color:#00ff00; text-shadow: 0 0 5px #00ff00;">[ SYSTEM LOGIN ]</h3>
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; height: 30px;">
+                                <span style="background: #333; color:#00ff00; border: 1px solid #00ff00; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="loginUser_${winId}" placeholder="username" style="flex: 1; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:'Courier New', monospace; outline:none;">
+                            </div>
+                            <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
+                            <button onclick="handleChatLogin('${winId}')" style="background:#003300; color:#00ff00; border: 1px solid #00ff00; width: 100%; margin-top: 5px; height: 32px; font-family:'Courier New', monospace; cursor:pointer;">&gt; LOGIN</button>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 13px;">No access code? <span style="color: #ffb000; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Register</span></div>
+                    </div>
+
+                    <!-- Signup Screen (Terminal Theme) -->
+                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:#000; color:#00ff00; font-family:'Courier New', monospace; flex: 1; min-height: 0; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0; margin-bottom: 20px; color:#00ff00; text-shadow: 0 0 5px #00ff00;">[ REGISTER NEW IDENTITY ]</h3>
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
+                            <input type="text" id="regDisplayName_${winId}" placeholder="Display Name" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;" maxlength="20">
+                            <div style="display: flex; height: 30px;">
+                                <span style="background: #333; color:#00ff00; border: 1px solid #00ff00; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="regUser_${winId}" placeholder="username (a-z, 0-9)" style="flex: 1; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:'Courier New', monospace; outline:none;" maxlength="15">
+                            </div>
+                            <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
+                            <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
+                            <button onclick="handleChatSignup('${winId}')" style="background:#003300; color:#00ff00; border: 1px solid #00ff00; width: 100%; margin-top: 5px; height: 32px; font-family:'Courier New', monospace; cursor:pointer;">&gt; CREATE ACCOUNT</button>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 13px;">Already registered? <span style="color: #ffb000; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login</span></div>
+                    </div>
+
+                    <!-- Terminal Messenger UI -->
+                    <div id="pChatMain_${winId}" style="display:none; flex-direction:column; height:100%; background:#000; box-sizing:border-box; border: inset 2px;">
                         <!-- Header -->
                         <div style="background: #008080; color: #fff; padding: 2px 5px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; border-bottom: 2px solid #555; display:flex; justify-content:space-between; align-items:center;">
                             <span>*** SECURE DIRECT TERMINAL ***</span>
-                            <span style="color:yellow; font-size: 11px;">AUTH: @${myUser}</span>
+                            <div>
+                                <span id="pAuthInfo_${winId}" style="color:yellow; font-size: 11px; margin-right:8px;"></span>
+                                <button onclick="chatLogout('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:10px; cursor:pointer; color:black; font-family: 'MS Sans Serif', sans-serif;">Logout</button>
+                            </div>
                         </div>
                         
                         <!-- Connect / Target Input -->
@@ -726,6 +747,14 @@
                         </div>
                     </div>
                 `;
+
+                if (localStorage.getItem('chatUsername')) {
+                    document.getElementById(`pChatMain_${winId}`).style.display = 'flex';
+                    document.getElementById(`pAuthInfo_${winId}`).innerText = `AUTH: @${localStorage.getItem('chatUsername')}`;
+                } else {
+                    document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
+                }
+            }
                 
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
@@ -968,11 +997,18 @@
             localStorage.removeItem('chatUsername');
             localStorage.removeItem('chatDisplayName');
             sessionStorage.removeItem('chatSessionStartTime');
-            document.getElementById(`chatMain_${winId}`).style.display = 'none';
+            
+            // မည်သည့် App Window ဖြစ်ကြောင်း စစ်ဆေး၍ ပိတ်ခြင်း
+            const globalMain = document.getElementById(`chatMain_${winId}`);
+            const privateMain = document.getElementById(`pChatMain_${winId}`);
+            
+            if (globalMain) globalMain.style.display = 'none';
+            if (privateMain) privateMain.style.display = 'none';
+            
             document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
             document.getElementById(`loginPass_${winId}`).value = '';
         };
-
+        
         // --- Toggle Auth View ---
         window.toggleAuthView = function(winId, view) {
             document.getElementById(`chatLogin_${winId}`).style.display = (view === 'login') ? 'flex' : 'none';
@@ -1028,15 +1064,23 @@
                 if (data.success) {
                     localStorage.setItem('chatUsername', data.username);
                     localStorage.setItem('chatDisplayName', data.display_name);
-
                     sessionStorage.setItem('chatSessionStartTime', Date.now());
 
                     document.getElementById(`chatLogin_${winId}`).style.display = 'none';
-                    document.getElementById(`chatMain_${winId}`).style.display = 'flex';
-                    document.getElementById(`chatName_${winId}`).value = data.display_name;
-                    document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${data.username}`;
                     
-                    initChatListener(winId);
+                    // မည်သည့် App မှ Login ဝင်လိုက်ကြောင်း စစ်ဆေး၍ သက်ဆိုင်ရာ UI ကို ဖွင့်ပေးခြင်း
+                    const globalMain = document.getElementById(`chatMain_${winId}`);
+                    const privateMain = document.getElementById(`pChatMain_${winId}`);
+
+                    if (globalMain) {
+                        globalMain.style.display = 'flex';
+                        document.getElementById(`chatName_${winId}`).value = data.display_name;
+                        document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${data.username}`;
+                        initChatListener(winId);
+                    } else if (privateMain) {
+                        privateMain.style.display = 'flex';
+                        document.getElementById(`pAuthInfo_${winId}`).innerText = `AUTH: @${data.username}`;
+                    }
                 } else {
                     customAlert(data.message || "Login failed.", "Error");
                 }
