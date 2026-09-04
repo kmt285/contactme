@@ -143,8 +143,8 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    // 💡 အောက်ပါလိုင်းတွင် လိုအပ်သည်များအားလုံးကို အတိအကျ Import လုပ်ထားပါသည်
-    import { getDatabase, ref, push, set, update, onChildAdded, onValue, serverTimestamp, query, orderByChild, startAt, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    // 💡 အောက်ပါလိုင်းတွင် orderByKey ကို အတိအကျ ပြန်ထည့်ထားပါသည်
+    import { getDatabase, ref, push, set, update, onChildAdded, onValue, serverTimestamp, query, orderByChild, orderByKey, startAt, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
@@ -163,15 +163,15 @@
     window.db = db;
     window.ref = ref;
     window.push = push;
-    window.set = set;       // 💡 အသစ် (Signal ပို့ရန်အတွက်)
-    window.update = update; // 💡 အသစ် (Seen ဖြစ်ကြောင်းပြရန်အတွက်)
+    window.set = set;       
+    window.update = update; 
     window.onChildAdded = onChildAdded;
     window.onValue = onValue; 
     window.serverTimestamp = serverTimestamp;
 
     window.query = query;
     window.orderByChild = orderByChild;
-    // 🚨 ပြဿနာဖြစ်စေသော orderByValue ကို လုံးဝ ဖယ်ရှားလိုက်ပါပြီ
+    window.orderByKey = orderByKey; // 🚨 ဒါလေး ကျန်ခဲ့လို့ Error တက်သွားတာပါ
     window.startAt = startAt;
     window.limitToLast = limitToLast;
 </script>
