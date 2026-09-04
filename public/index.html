@@ -143,8 +143,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-
-    import { getDatabase, ref, push, onChildAdded, serverTimestamp, query, orderByChild, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onChildChanged, serverTimestamp, query, orderByChild, orderByValue, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
@@ -164,10 +163,12 @@
     window.ref = ref;
     window.push = push;
     window.onChildAdded = onChildAdded;
+    window.onChildChanged = onChildChanged; // 💡 အသစ်
     window.serverTimestamp = serverTimestamp;
 
     window.query = query;
     window.orderByChild = orderByChild;
+    window.orderByValue = orderByValue; // 💡 အသစ်
     window.startAt = startAt;
     window.limitToLast = limitToLast;
     window.update = update;
@@ -1161,34 +1162,33 @@
             });
         };
 
-        // 💡 အသစ်ထည့်ရမည့်အပိုင်း - Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener
-window.isSignalListening = false; // Listener နှစ်ခါမပွင့်စေရန် ထိန်းချုပ်ခြင်း
+// 💡 အသစ်ထည့်ရမည့်အပိုင်း - Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener
+window.isSignalListening = false; 
 
 window.initSignalListener = function(myUsername) {
     if (window.isSignalListening) return; 
     window.isSignalListening = true;
 
     const signalRef = window.ref(window.db, `signals/${myUsername}`);
-    const sessionTime = Date.now(); // မိမိ Login ဝင်ပြီးနောက်မှ ဝင်လာသော Signal ကိုသာ ဖမ်းမည်
+    // Server နဲ့ Local အချိန်လွဲနိုင်တာကိုကာကွယ်ရန် (၁ မိနစ်စာ လျှော့ထားပါသည်)
+    const sessionTime = Date.now() - 60000; 
 
     const q = window.query(signalRef, window.orderByValue(), window.startAt(sessionTime));
     
     const notifyIncoming = (snapshot) => {
-        const sender = snapshot.key; // စာလှမ်းပို့သူ၏ Username
+        const sender = snapshot.key; 
         
-        // ချက်ချင်း Alert မပြသေးဘဲ လက်ရှိအချိန်မှာ အဆိုပါလူနှင့် စကားပြောရန် ချိတ်ဆက်ထားပြီးခြင်း ရှိ/မရှိ စစ်ဆေးမည်
         let isAlreadyConnected = false;
         Object.keys(window).forEach(key => {
             if (key.startsWith('pChatTarget_') && window[key] === sender) {
-                // အကယ်၍ ချိတ်ဆက်ထားသော Chat Window ဖွင့်ထားဆဲဖြစ်လျှင် (ပိတ်မသွားသေးလျှင်)
                 const winId = key.replace('pChatTarget_', '');
+                // ဖွင့်ထားတဲ့ Chat Window တကယ်ရှိနေသေးလား စစ်ဆေးခြင်း
                 if (document.getElementById(`pChatMain_${winId}`)) {
                     isAlreadyConnected = true;
                 }
             }
         });
 
-        // ချိတ်ဆက်မထားရသေးဘူး ဆိုမှသာ System Alert ပြပေးမည်
         if (!isAlreadyConnected) {
             customAlert(
                 `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`, 
@@ -1197,10 +1197,21 @@ window.initSignalListener = function(myUsername) {
         }
     };
 
-    // အသစ်ဝင်လာလျှင်သော်လည်းကောင်း၊ ထပ်ပို့လျှင်သော်လည်းကောင်း Alert ပြမည်
     window.onChildAdded(q, notifyIncoming);
     window.onChildChanged(q, notifyIncoming);
 };
+
+// 💡 Desktop ပေါ်မှာပဲရှိနေရင်တောင် အလုပ်လုပ်စေမယ့် Auto-Starter
+const checkAndStartListener = setInterval(() => {
+    // Firebase Load ဖြစ်ပြီးသွားမှ စတင်မည်
+    if (window.ref && window.orderByValue) { 
+        const savedUser = localStorage.getItem('chatUsername');
+        if (savedUser) {
+            window.initSignalListener(savedUser);
+        }
+        clearInterval(checkAndStartListener);
+    }
+}, 1000);
 
         // --- 4. Send Message ---
         window.sendChatMessage = async function(winId) {
@@ -1373,11 +1384,11 @@ window.initSignalListener = function(myUsername) {
             status: 'sent'
         });
 
-        // 💡 အသစ်ထည့်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
+        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
         const targetUser = window[`pChatTarget_${winId}`];
         if (targetUser) {
             window.update(window.ref(window.db, `signals/${targetUser}`), {
-                [myUser]: Date.now() // Sender နာမည်နဲ့ အချိန်ကို မှတ်သားလိုက်သည်
+                [myUser]: window.serverTimestamp() // 💡 Date.now() အစား Firebase Server အချိန်ကိုသုံးရန်ပြောင်းလိုက်ပါ
             });
         }
         
