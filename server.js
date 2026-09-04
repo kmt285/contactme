@@ -199,20 +199,41 @@ app.post('/api/delete', authenticateToken, async (req, res) => {
 
 // --- 🚨 ပြင်ဆင်ထားသော လုံခြုံရေးအပြည့်ပါသည့် Firebase ဖျက်သိမ်းခြင်း (Cron Job) 🚨 ---
 app.get('/api/cron/clear-firebase', async (req, res) => {
-    // Vercel က ပို့လိုက်တဲ့ Secret Key ဟုတ်မဟုတ် စစ်ဆေးခြင်း (အခြားသူများ ဝင်ရောက်ဖျက်ဆီးခြင်းမှ ကာကွယ်ရန်)
     const authHeader = req.headers['authorization'];
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return res.status(401).json({ success: false, message: "Unauthorized Request" });
     }
 
     try {
-        // Firebase Admin ကို အသုံးပြု၍ ဖျက်ခြင်း
         if (!admin.apps.length) throw new Error("Firebase Admin not initialized");
         
+        // ၁။ Global Chat ကို ည ၁၂ နာရီတိုင်း အကုန်ရှင်းလင်းမည်
         await admin.database().ref('global_chat').remove();
         
-        console.log("✅ Chat database cleared successfully via Cron.");
-        res.status(200).json({ success: true, message: "Chat database cleared." });
+        // ၂။ Private Chat များကို စစ်ဆေး၍ ရှင်းလင်းမည်
+        const privateChatsRef = admin.database().ref('private_chats');
+        const snapshot = await privateChatsRef.once('value');
+        
+        if (snapshot.exists()) {
+            const rooms = snapshot.val();
+            // Fallback: ရက် ၃၀ ကျော်သွားရင်တော့ seen မဖြစ်လည်း ဖျက်ပစ်မယ် (Database လုံးဝ မပြည့်စေရန် Safety Net)
+            const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; 
+            const cutoffTime = Date.now() - THIRTY_DAYS_MS;
+
+            for (const roomId in rooms) {
+                const messages = rooms[roomId];
+                for (const msgId in messages) {
+                    const msg = messages[msgId];
+                    // Seen ဖြစ်နေလျှင် (သို့) ၃၀ ရက်ကျော်နေလျှင် ဖျက်မည်
+                    if (msg.status === 'seen' || msg.timestamp < cutoffTime) {
+                        await privateChatsRef.child(`${roomId}/${msgId}`).remove();
+                    }
+                }
+            }
+        }
+        
+        console.log("✅ Database cleanup completed (Global wiped, Seen Private Messages cleared).");
+        res.status(200).json({ success: true, message: "Database cleanup completed." });
     } catch (error) {
         console.error("❌ Cron Job Error:", error);
         res.status(500).json({ success: false, error: "Cron Job Failed" });
