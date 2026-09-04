@@ -144,7 +144,7 @@
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 
-    import { getDatabase, ref, push, onChildAdded, serverTimestamp, query, orderByChild, startAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, serverTimestamp, query, orderByChild, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
@@ -169,6 +169,8 @@
     window.query = query;
     window.orderByChild = orderByChild;
     window.startAt = startAt;
+    window.limitToLast = limitToLast;
+    window.update = update;
 </script>
     
     <script>
@@ -1260,6 +1262,16 @@
                 if(window[`pChatActiveRoom_${winId}`] !== roomID) return; 
 
                 const data = snapshot.val();
+                const msgKey = snapshot.key; // Database ထဲက Message ID ကို ယူခြင်း
+                const isMe = (data.sender === myUser);
+
+                // 🚨 ဖတ်ပြီးကြောင်း (Seen) Update လုပ်ခြင်း 🚨
+                // ကိုယ်ပို့တဲ့စာမဟုတ်ဘူးဆိုရင် ဖတ်လိုက်ပြီဖြစ်တဲ့အတွက် Database မှာ 'seen' အဖြစ် ပြောင်းပေးမည်
+                if (!isMe && data.status !== 'seen') {
+                    const msgRef = window.ref(window.db, `private_chats/${roomID}/${msgKey}`);
+                    window.update(msgRef, { status: 'seen' }).catch(e => console.log(e));
+                }
+
                 let decryptedMsg = "";
                 
                 try {
@@ -1309,7 +1321,8 @@
                 await window.push(window.ref(window.db, `private_chats/${roomID}`), {
                     sender: myUser,
                     message: encryptedMsg,
-                    timestamp: window.serverTimestamp()
+                    timestamp: window.serverTimestamp(),
+                    status: 'sent'  // <--- 🚨 အသစ်ထည့်ထားသည် 🚨
                 });
             } catch(e) {
                 customAlert("Transmission failed. Network anomaly detected.", "Error");
