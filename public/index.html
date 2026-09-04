@@ -1162,49 +1162,57 @@
             });
         };
 
-// 💡 အသစ်ထည့်ရမည့်အပိုင်း - Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener
+// 💡 Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener အသစ် (Time Issue ဖြေရှင်းထားသည်)
 window.isSignalListening = false; 
 
 window.initSignalListener = function(myUsername) {
     if (window.isSignalListening) return; 
     window.isSignalListening = true;
 
+    let isInitialLoad = true; // 💡 အချိန် (Timestamp) အစား Initial Load ကိုကျော်မည့်နည်း
     const signalRef = window.ref(window.db, `signals/${myUsername}`);
-    // Server နဲ့ Local အချိန်လွဲနိုင်တာကိုကာကွယ်ရန် (၁ မိနစ်စာ လျှော့ထားပါသည်)
-    const sessionTime = Date.now() - 60000; 
-
-    const q = window.query(signalRef, window.orderByValue(), window.startAt(sessionTime));
     
-    const notifyIncoming = (snapshot) => {
-        const sender = snapshot.key; 
+    // နောက်ဆုံးဝင်လာတဲ့ ၁ ခုကိုပဲ စောင့်ဖမ်းမယ် (အချိန်လွဲချော်မှု ပြဿနာ လုံးဝမရှိတော့ပါ)
+    const q = window.query(signalRef, window.limitToLast(1));
+    
+    window.onChildAdded(q, (snapshot) => {
+        if (isInitialLoad) return; // Page စစဖွင့်ချင်း Data အဟောင်းတွေကို ကျော်ချမည်
+        
+        const data = snapshot.val();
+        if (!data || !data.sender) return;
+        const sender = data.sender; 
         
         let isAlreadyConnected = false;
         Object.keys(window).forEach(key => {
             if (key.startsWith('pChatTarget_') && window[key] === sender) {
                 const winId = key.replace('pChatTarget_', '');
-                // ဖွင့်ထားတဲ့ Chat Window တကယ်ရှိနေသေးလား စစ်ဆေးခြင်း
-                if (document.getElementById(`pChatMain_${winId}`)) {
+                const winEl = document.getElementById(winId);
+                const mainUI = document.getElementById(`pChatMain_${winId}`);
+                
+                // Window ပိတ်မထားဘူး၊ Minimize လုပ်မထားဘူးဆိုမှ Alert မပြဘဲနေမည်
+                if (winEl && winEl.style.display !== 'none' && mainUI && mainUI.style.display !== 'none') {
                     isAlreadyConnected = true;
                 }
             }
         });
 
+        // ချိတ်ဆက်မထားသေးရင် Alert တက်လာပါမည်
         if (!isAlreadyConnected) {
             customAlert(
                 `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`, 
                 "System Secure Alert"
             );
         }
-    };
+    });
 
-    window.onChildAdded(q, notifyIncoming);
-    window.onChildChanged(q, notifyIncoming);
+    // ၁.၅ စက္ကန့်ကြာရင် Initial Load ပြီးပြီလို့ သတ်မှတ်ပြီး Alert တွေကို စတင်လက်ခံပါမယ်
+    setTimeout(() => { isInitialLoad = false; }, 1500);
 };
 
 // 💡 Desktop ပေါ်မှာပဲရှိနေရင်တောင် အလုပ်လုပ်စေမယ့် Auto-Starter
 const checkAndStartListener = setInterval(() => {
     // Firebase Load ဖြစ်ပြီးသွားမှ စတင်မည်
-    if (window.ref && window.orderByValue) { 
+    if (window.ref && window.query) { 
         const savedUser = localStorage.getItem('chatUsername');
         if (savedUser) {
             window.initSignalListener(savedUser);
@@ -1387,8 +1395,10 @@ const checkAndStartListener = setInterval(() => {
         // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
         const targetUser = window[`pChatTarget_${winId}`];
         if (targetUser) {
-            window.update(window.ref(window.db, `signals/${targetUser}`), {
-                [myUser]: window.serverTimestamp() // 💡 Date.now() အစား Firebase Server အချိန်ကိုသုံးရန်ပြောင်းလိုက်ပါ
+            // 💡 Update အစား Push ကိုသုံးပြီး Signal အသစ်များအဖြစ် ပို့လွှတ်မည်
+            window.push(window.ref(window.db, `signals/${targetUser}`), {
+                sender: myUser,
+                t: window.serverTimestamp() 
             });
         }
         
