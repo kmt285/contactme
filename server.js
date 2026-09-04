@@ -37,7 +37,7 @@ const ChatUserSchema = new mongoose.Schema({
 const ChatUser = mongoose.model('ChatUser', ChatUserSchema);
 
 // --- ၁။ Chat Account အသစ်ဖွင့်ခြင်း (Signup) ---
-app.post('/api/chat-signup', async (req, res) => {
+app.post('/api/chat-signup', signupLimiter, async (req, res) => {
     try {
         const { display_name, username, password } = req.body;
         
@@ -63,7 +63,7 @@ app.post('/api/chat-signup', async (req, res) => {
 });
 
 // --- ၂။ Chat Login ဝင်ခြင်း ---
-app.post('/api/chat-login', async (req, res) => {
+app.post('/api/chat-login', loginLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
         const hashedPassword = CryptoJS.SHA256(password).toString();
@@ -92,6 +92,32 @@ app.post('/api/chat-update-name', async (req, res) => {
 });
 
 const sendLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { success: false, error: "Too many requests." } });
+
+// --- Authentication Rate Limiters (Brute-force ကာကွယ်ရန်) ---
+
+// ၁။ Signup Limiter: IP တစ်ခုတည်းကနေ Account အများကြီး ဆက်တိုက်ဖွင့်ခြင်းကို ကာကွယ်ရန်
+const signupLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // ၁၅ မိနစ် (အချိန်သတ်မှတ်ချက်)
+    max: 5, // ၁၅ မိနစ်အတွင်း အများဆုံး ၅ ကြိမ်သာ request ပို့ခွင့်ပြုမည်
+    message: { 
+        success: false, 
+        message: "အကောင့်ဖွင့်ရန် ကြိုးစားမှု များပြားလွန်းနေပါသည်။ ၁၅ မိနစ်ခန့်စောင့်ပြီးမှ ထပ်မံကြိုးစားပါ။" 
+    },
+    standardHeaders: true, // X-RateLimit အစား စံသတ်မှတ်ထားသော RateLimit headers များကို သုံးမည်
+    legacyHeaders: false,
+});
+
+// ၂။ Login Limiter: Password မှန်းပြီး အကြိမ်ကြိမ်စမ်းဝင်ခြင်းကို ကာကွယ်ရန်
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // ၁၅ မိနစ် (အချိန်သတ်မှတ်ချက်)
+    max: 5, // Password အမှား ၅ ကြိမ်ထက်ပိုရိုက်မိပါက ပိတ်ပင်မည်
+    message: { 
+        success: false, 
+        message: "Login ဝင်ရန် ကြိုးစားမှု များပြားလွန်းနေပါသည်။ ၁၅ မိနစ်ခန့်စောင့်ပြီးမှ ထပ်မံကြိုးစားပါ။" 
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // --- JWT Middleware (Token စစ်ဆေးသည့် အပိုင်း) ---
 function authenticateToken(req, res, next) {
