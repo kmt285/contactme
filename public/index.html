@@ -143,7 +143,8 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onValue, serverTimestamp, query, orderByChild, startAt, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    // 💡 အောက်ပါလိုင်းတွင် လိုအပ်သည်များအားလုံးကို အတိအကျ Import လုပ်ထားပါသည်
+    import { getDatabase, ref, push, set, update, onChildAdded, onValue, serverTimestamp, query, orderByChild, startAt, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyChPkySLozNQvlth6IBMjA1R1Dp3Vys95s",
@@ -162,16 +163,17 @@
     window.db = db;
     window.ref = ref;
     window.push = push;
+    window.set = set;       // 💡 အသစ် (Signal ပို့ရန်အတွက်)
+    window.update = update; // 💡 အသစ် (Seen ဖြစ်ကြောင်းပြရန်အတွက်)
     window.onChildAdded = onChildAdded;
-    window.onValue = onValue; // 💡 အသစ်
+    window.onValue = onValue; 
     window.serverTimestamp = serverTimestamp;
 
     window.query = query;
     window.orderByChild = orderByChild;
-    window.orderByValue = orderByValue; // 💡 အသစ်
+    // 🚨 ပြဿနာဖြစ်စေသော orderByValue ကို လုံးဝ ဖယ်ရှားလိုက်ပါပြီ
     window.startAt = startAt;
     window.limitToLast = limitToLast;
-    window.update = update;
 </script>
     
     <script>
@@ -1388,10 +1390,11 @@ const checkAndStartListener = setInterval(() => {
             status: 'sent'
         });
 
-        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း (Overwrite Method)
+        // 💡 ပြင်ဆင်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
         const targetUser = window[`pChatTarget_${winId}`];
         if (targetUser) {
-            window.update(window.ref(window.db, `signals/${targetUser}`), {
+            // update အစား set ကို သုံးခြင်းဖြင့် Signal ကို အမြဲတမ်း Overwrite လုပ်ပါမည်
+            window.set(window.ref(window.db, `signals/${targetUser}`), {
                 sender: myUser,
                 timestamp: Date.now(), 
                 trigger: Math.random() // Data အသစ်ဖြစ်ကြောင်း Firebase ကို သိစေရန်
