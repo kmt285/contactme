@@ -687,34 +687,34 @@
                 
                 // Terminal ပုံစံ Login, Signup နှင့် Private Messenger UI
                 contentArea.innerHTML = `
-                    <!-- Login Screen (Terminal Theme) -->
-                    <div id="chatLogin_${winId}" style="padding: 20px; background:#000; color:#00ff00; font-family:'Courier New', monospace; flex: 1; min-height: 0; box-sizing:border-box; display:none; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                        <h3 style="margin-top:0; margin-bottom: 20px; color:#00ff00; text-shadow: 0 0 5px #00ff00;">[ SYSTEM LOGIN ]</h3>
+                    <!-- Login Screen (Retro Theme) -->
+                    <div id="chatLogin_${winId}" style="padding: 20px; background:var(--win-bg); flex: 1; min-height: 0; box-sizing:border-box; display:none; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0; margin-bottom: 20px; color:#000; text-shadow:none;">System Login</h3>
                         <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
                             <div style="display: flex; height: 30px;">
-                                <span style="background: #333; color:#00ff00; border: 1px solid #00ff00; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
-                                <input type="text" id="loginUser_${winId}" placeholder="username" style="flex: 1; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:'Courier New', monospace; outline:none;">
+                                <span style="background: #dfdfdf; color:#000; border: inset 2px; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="loginUser_${winId}" placeholder="username" style="flex: 1; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:monospace; outline:none;">
                             </div>
-                            <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
-                            <button onclick="handleChatLogin('${winId}')" style="background:#003300; color:#00ff00; border: 1px solid #00ff00; width: 100%; margin-top: 5px; height: 32px; font-family:'Courier New', monospace; cursor:pointer;">&gt; LOGIN</button>
+                            <input type="password" id="loginPass_${winId}" placeholder="Password" style="width: 100%; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:monospace; outline:none;">
+                            <button class="action-btn" onclick="handleChatLogin('${winId}')" style="width: 100%; margin-top: 5px; height: 32px; font-family:'MS Sans Serif', sans-serif;">Login</button>
                         </div>
-                        <div style="margin-top: 15px; font-size: 13px;">No access code? <span style="color: #ffb000; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Register</span></div>
+                        <div style="margin-top: 15px; font-size: 13px; color:#000;">Don't have an account? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'signup')">Sign Up</span></div>
                     </div>
 
-                    <!-- Signup Screen (Terminal Theme) -->
-                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:#000; color:#00ff00; font-family:'Courier New', monospace; flex: 1; min-height: 0; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
-                        <h3 style="margin-top:0; margin-bottom: 20px; color:#00ff00; text-shadow: 0 0 5px #00ff00;">[ REGISTER NEW IDENTITY ]</h3>
+                    <!-- Signup Screen (Retro Theme) -->
+                    <div id="chatSignup_${winId}" style="display:none; padding: 20px; background:var(--win-bg); flex: 1; min-height: 0; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center; border: inset 2px;">
+                        <h3 style="margin-top:0; margin-bottom: 20px; color:#000; text-shadow:none;">Create Account</h3>
                         <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
-                            <input type="text" id="regDisplayName_${winId}" placeholder="Display Name" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;" maxlength="20">
+                            <input type="text" id="regDisplayName_${winId}" placeholder="Display Name (e.g. John Doe)" style="width: 100%; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:monospace; outline:none;" maxlength="20">
                             <div style="display: flex; height: 30px;">
-                                <span style="background: #333; color:#00ff00; border: 1px solid #00ff00; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
-                                <input type="text" id="regUser_${winId}" placeholder="username (a-z, 0-9)" style="flex: 1; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:'Courier New', monospace; outline:none;" maxlength="15">
+                                <span style="background: #dfdfdf; color:#000; border: inset 2px; border-right: none; padding: 0 10px; font-weight: bold; display: flex; align-items: center; box-sizing: border-box;">@</span>
+                                <input type="text" id="regUser_${winId}" placeholder="username (a-z, 0-9)" style="flex: 1; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 100%; font-family:monospace; outline:none;" maxlength="15">
                             </div>
-                            <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
-                            <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 100%; background:#000; color:#00ff00; border: 1px solid #00ff00; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:'Courier New', monospace; outline:none;">
-                            <button onclick="handleChatSignup('${winId}')" style="background:#003300; color:#00ff00; border: 1px solid #00ff00; width: 100%; margin-top: 5px; height: 32px; font-family:'Courier New', monospace; cursor:pointer;">&gt; CREATE ACCOUNT</button>
+                            <input type="password" id="regPass_${winId}" placeholder="Password" style="width: 100%; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:monospace; outline:none;">
+                            <input type="password" id="regConfirm_${winId}" placeholder="Confirm Password" style="width: 100%; background:#fff; color:#000; border: inset 2px; margin-bottom: 0; box-sizing: border-box; height: 30px; font-family:monospace; outline:none;">
+                            <button class="action-btn" onclick="handleChatSignup('${winId}')" style="width: 100%; margin-top: 5px; height: 32px; font-family:'MS Sans Serif', sans-serif;">Register</button>
                         </div>
-                        <div style="margin-top: 15px; font-size: 13px;">Already registered? <span style="color: #ffb000; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login</span></div>
+                        <div style="margin-top: 15px; font-size: 13px; color:#000;">Already have an account? <span style="color: blue; cursor: pointer; text-decoration: underline;" onclick="toggleAuthView('${winId}', 'login')">Login</span></div>
                     </div>
 
                     <!-- Terminal Messenger UI -->
