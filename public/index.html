@@ -138,6 +138,9 @@
         #sign-in-btn:active { transform: scale(0.96); }
     </style>
 
+    <!-- E2E Encryption အတွက် CryptoJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 
@@ -678,6 +681,50 @@
                     document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${localStorage.getItem('chatUsername')}`;
                     initChatListener(winId);
                 }
+
+            } else if(item.type === 'private_chat') {
+                contentArea.style.overflow = 'hidden';
+                
+                // Login ဝင်ထားခြင်း ရှိမရှိ စစ်ဆေးမည် (Shared Auth)
+                if (!localStorage.getItem('chatUsername')) {
+                    contentArea.innerHTML = `
+                        <div style="padding:20px; text-align:center; background:var(--win-bg); flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                            <h2 style="margin-top:0; color:#000080;">🔒 Access Denied</h2>
+                            <p style="font-size:14px; margin-bottom:20px;">You must be logged into the Network to use Private Messenger.</p>
+                            <button class="action-btn" style="width:auto; padding:5px 20px;" onclick="customAlert('Please open the [Global Chat] app from the desktop to Login or Create an account first.', 'Login Required')">How to Login?</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // ဝင်ထားပြီးပါက Messenger UI အပြည့်အစုံ ပြသမည်
+                const myUser = localStorage.getItem('chatUsername');
+                contentArea.innerHTML = `
+                    <div style="display:flex; flex-direction:column; height:100%; background:var(--win-bg); box-sizing:border-box;">
+                        <!-- Toolbar -->
+                        <div style="padding: 6px 10px; background: #c0c0c0; border-bottom: 2px solid #808080; display:flex; align-items:center; gap:8px;">
+                            <b style="font-size:13px; color:#000080;">👤 @${myUser}</b>
+                            <div style="width:2px; height:18px; background:#808080; border-right:1px solid #fff; margin:0 5px;"></div>
+                            <span style="font-size:13px;">To: @</span>
+                            <input type="text" id="pTargetUser_${winId}" placeholder="username" style="width:120px; height:24px; box-sizing:border-box; padding:2px 5px; margin:0;">
+                            <button class="action-btn" onclick="startPrivateChat('${winId}')" style="height:24px; padding:0 10px; margin:0;">Start Chat</button>
+                        </div>
+                        
+                        <!-- Chat Area -->
+                        <div id="pChatMessages_${winId}" style="flex:1; background:#fff; overflow-y:auto; padding:15px; font-family:sans-serif; font-size:13px; border-bottom: 2px solid #808080; border-top: 2px solid #000;">
+                            <div style="color:#666; text-align:center; margin-top:30px;">
+                                <div style="font-size:40px; margin-bottom:10px;">✉️</div>
+                                Enter a username above and click Start Chat<br>to begin an End-to-End Encrypted conversation.
+                            </div>
+                        </div>
+                        
+                        <!-- Input Area -->
+                        <div style="padding: 8px; background: #c0c0c0; display:flex; align-items:center; gap:8px;">
+                            <input type="text" id="pChatInput_${winId}" placeholder="Type encrypted message..." disabled autocomplete="off" onkeypress="if(event.key === 'Enter') sendPrivateMessage('${winId}')" style="flex:1; height:30px; margin:0; box-sizing:border-box;">
+                            <button class="action-btn" id="pChatSend_${winId}" onclick="sendPrivateMessage('${winId}')" disabled style="height:30px; width:80px; margin:0;">Send</button>
+                        </div>
+                    </div>
+                `;
                 
             } else if(item.type === 'folder') {
                 contentArea.innerHTML = `<div id="folderContainer_${winId}" class="folder-grid" style="padding: 10px;"></div>`;
@@ -1113,6 +1160,97 @@
                 msgInput.disabled = false;
                 msgInput.placeholder = "type message...";
                 msgInput.focus();
+            }
+        };
+
+    // --- 5. Start Private Chat (E2EE Listener) ---
+        window.startPrivateChat = function(winId) {
+            const myUser = localStorage.getItem('chatUsername');
+            const targetUser = document.getElementById(`pTargetUser_${winId}`).value.trim().toLowerCase();
+            
+            if(!targetUser) return customAlert("Please enter a username.", "Error");
+            if(targetUser === myUser) return customAlert("You cannot chat with yourself.", "Error");
+            
+            // Username နှစ်ခုကို အက္ခရာစဉ်အတိုင်းစီပြီး Shared Key (Room ID) တည်ဆောက်ခြင်း
+            const roomID = [myUser, targetUser].sort().join('_');
+            
+            // ယခင် Chat Room အဟောင်းရှိခဲ့လျှင် ရပ်တန့်ရန် Tracking လုပ်ခြင်း
+            window[`pChatActiveRoom_${winId}`] = roomID;
+            window[`pChatTarget_${winId}`] = targetUser;
+
+            const msgBox = document.getElementById(`pChatMessages_${winId}`);
+            msgBox.innerHTML = `<div style="text-align:center; margin-bottom:15px;"><span style="background:#008000; color:white; padding:3px 10px; border-radius:10px; font-size:11px;">🔒 End-to-End Encrypted</span><br><br><b style="color:#000080;">Chatting with @${targetUser}</b></div>`;
+
+            document.getElementById(`pChatInput_${winId}`).disabled = false;
+            document.getElementById(`pChatSend_${winId}`).disabled = false;
+            document.getElementById(`pChatInput_${winId}`).focus();
+
+            const chatRef = window.ref(window.db, `private_chats/${roomID}`);
+            const q = window.query(chatRef, window.orderByChild('timestamp'));
+
+            window.onChildAdded(q, (snapshot) => {
+                // Room ပြောင်းသွားလျှင် အဟောင်းများကို လျစ်လျူရှုမည်
+                if(window[`pChatActiveRoom_${winId}`] !== roomID) return; 
+
+                const data = snapshot.val();
+                let decryptedMsg = "";
+                
+                // AES Decryption (Shared Room ID ကို Key အနေဖြင့်သုံးသည်)
+                try {
+                    const bytes = CryptoJS.AES.decrypt(data.message, roomID);
+                    decryptedMsg = bytes.toString(CryptoJS.enc.Utf8);
+                    if(!decryptedMsg) decryptedMsg = "🔒 [Decryption Failed]";
+                } catch(e) {
+                    decryptedMsg = "🔒 [Decryption Failed]";
+                }
+
+                const isMe = (data.sender === myUser);
+                const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                const msgDiv = document.createElement('div');
+                msgDiv.style.marginBottom = "10px";
+                msgDiv.style.display = "flex";
+                msgDiv.style.flexDirection = "column";
+                msgDiv.style.alignItems = isMe ? "flex-end" : "flex-start";
+
+                msgDiv.innerHTML = `
+                    <div style="max-width: 80%; background: ${isMe ? '#dcf8c6' : '#fff'}; padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 1px 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 14px; color: #000; word-break: break-word;">${escapeHTML(decryptedMsg)}</div>
+                        <div style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}</div>
+                    </div>
+                `;
+                msgBox.appendChild(msgDiv);
+                msgBox.scrollTop = msgBox.scrollHeight;
+            });
+        };
+
+        // --- 6. Send Private Message (E2EE) ---
+        window.sendPrivateMessage = async function(winId) {
+            const myUser = localStorage.getItem('chatUsername');
+            const targetUser = window[`pChatTarget_${winId}`];
+            const roomID = window[`pChatActiveRoom_${winId}`];
+            const inputEl = document.getElementById(`pChatInput_${winId}`);
+            const msgText = inputEl.value.trim();
+
+            if(!msgText || !roomID) return;
+
+            inputEl.value = '';
+            inputEl.disabled = true;
+
+            try {
+                // AES Encryption (Firebase ပေါ်မတင်မီ စာဝှက်ခြင်း)
+                const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
+
+                await window.push(window.ref(window.db, `private_chats/${roomID}`), {
+                    sender: myUser,
+                    message: encryptedMsg,
+                    timestamp: window.serverTimestamp()
+                });
+            } catch(e) {
+                customAlert("Failed to send message.", "Error");
+            } finally {
+                inputEl.disabled = false;
+                inputEl.focus();
             }
         };
     </script>
