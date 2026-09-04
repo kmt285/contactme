@@ -681,6 +681,7 @@
                     document.getElementById(`chatMain_${winId}`).style.display = 'flex';
                     document.getElementById(`chatName_${winId}`).value = localStorage.getItem('chatDisplayName') || '';
                     document.getElementById(`myUserIdInfo_${winId}`).innerText = `@${localStorage.getItem('chatUsername')}`;
+                    if(window.initSignalListener) window.initSignalListener(localStorage.getItem('chatUsername'));
                     initChatListener(winId);
                 }
 
@@ -753,6 +754,7 @@
                 if (localStorage.getItem('chatUsername')) {
                     document.getElementById(`pChatMain_${winId}`).style.display = 'flex';
                     document.getElementById(`pAuthInfo_${winId}`).innerText = `AUTH: @${localStorage.getItem('chatUsername')}`;
+                    if(window.initSignalListener) window.initSignalListener(localStorage.getItem('chatUsername'));
                 } else {
                     document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
                 }
@@ -1067,6 +1069,8 @@
                     localStorage.setItem('chatDisplayName', data.display_name);
                     sessionStorage.setItem('chatSessionStartTime', Date.now());
 
+                    window.initSignalListener(data.username);
+
                     document.getElementById(`chatLogin_${winId}`).style.display = 'none';
                     
                     // မည်သည့် App မှ Login ဝင်လိုက်ကြောင်း စစ်ဆေး၍ သက်ဆိုင်ရာ UI ကို ဖွင့်ပေးခြင်း
@@ -1156,6 +1160,47 @@
                 currentMsgBox.scrollTop = currentMsgBox.scrollHeight;
             });
         };
+
+        // 💡 အသစ်ထည့်ရမည့်အပိုင်း - Background မှ Signal ကိုစောင့်ကြည့်မည့် Listener
+window.isSignalListening = false; // Listener နှစ်ခါမပွင့်စေရန် ထိန်းချုပ်ခြင်း
+
+window.initSignalListener = function(myUsername) {
+    if (window.isSignalListening) return; 
+    window.isSignalListening = true;
+
+    const signalRef = window.ref(window.db, `signals/${myUsername}`);
+    const sessionTime = Date.now(); // မိမိ Login ဝင်ပြီးနောက်မှ ဝင်လာသော Signal ကိုသာ ဖမ်းမည်
+
+    const q = window.query(signalRef, window.orderByValue(), window.startAt(sessionTime));
+    
+    const notifyIncoming = (snapshot) => {
+        const sender = snapshot.key; // စာလှမ်းပို့သူ၏ Username
+        
+        // ချက်ချင်း Alert မပြသေးဘဲ လက်ရှိအချိန်မှာ အဆိုပါလူနှင့် စကားပြောရန် ချိတ်ဆက်ထားပြီးခြင်း ရှိ/မရှိ စစ်ဆေးမည်
+        let isAlreadyConnected = false;
+        Object.keys(window).forEach(key => {
+            if (key.startsWith('pChatTarget_') && window[key] === sender) {
+                // အကယ်၍ ချိတ်ဆက်ထားသော Chat Window ဖွင့်ထားဆဲဖြစ်လျှင် (ပိတ်မသွားသေးလျှင်)
+                const winId = key.replace('pChatTarget_', '');
+                if (document.getElementById(`pChatMain_${winId}`)) {
+                    isAlreadyConnected = true;
+                }
+            }
+        });
+
+        // ချိတ်ဆက်မထားရသေးဘူး ဆိုမှသာ System Alert ပြပေးမည်
+        if (!isAlreadyConnected) {
+            customAlert(
+                `[ENCRYPTED SIGNAL DETECTED]<br><br>Incoming transmission from: <b style="color:blue;">@${sender}</b><br><br>Open Private Messenger and type their username to establish secure link.`, 
+                "System Secure Alert"
+            );
+        }
+    };
+
+    // အသစ်ဝင်လာလျှင်သော်လည်းကောင်း၊ ထပ်ပို့လျှင်သော်လည်းကောင်း Alert ပြမည်
+    window.onChildAdded(q, notifyIncoming);
+    window.onChildChanged(q, notifyIncoming);
+};
 
         // --- 4. Send Message ---
         window.sendChatMessage = async function(winId) {
@@ -1320,14 +1365,23 @@
             inputEl.disabled = true;
 
             try {
-                const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
-                await window.push(window.ref(window.db, `private_chats/${roomID}`), {
-                    sender: myUser,
-                    message: encryptedMsg,
-                    timestamp: window.serverTimestamp(),
-                    status: 'sent'  // <--- 🚨 အသစ်ထည့်ထားသည် 🚨
-                });
-            } catch(e) {
+        const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
+        await window.push(window.ref(window.db, `private_chats/${roomID}`), {
+            sender: myUser,
+            message: encryptedMsg,
+            timestamp: window.serverTimestamp(),
+            status: 'sent'
+        });
+
+        // 💡 အသစ်ထည့်ရမည့်အပိုင်း - တစ်ဖက်လူထံသို့ Ping (Signal) လှမ်းပို့ခြင်း
+        const targetUser = window[`pChatTarget_${winId}`];
+        if (targetUser) {
+            window.update(window.ref(window.db, `signals/${targetUser}`), {
+                [myUser]: Date.now() // Sender နာမည်နဲ့ အချိန်ကို မှတ်သားလိုက်သည်
+            });
+        }
+        
+    } catch(e) { 
                 customAlert("Transmission failed. Network anomaly detected.", "Error");
             } finally {
                 inputEl.disabled = false;
