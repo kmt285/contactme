@@ -1281,8 +1281,7 @@
                 } catch(e) {
                     decryptedMsg = "[DECRYPTION FAILED - CORRUPT DATA]";
                 }
-
-                const isMe = (data.sender === myUser);
+                
                 const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
 
                 // Terminal စတိုင် အမည်းရောင်ပေါ်မှ အရောင်များ
