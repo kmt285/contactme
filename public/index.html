@@ -1256,7 +1256,11 @@
             document.getElementById(`pChatInput_${winId}`).focus();
 
             const chatRef = window.ref(window.db, `private_chats/${roomID}`);
-            const q = window.query(chatRef, window.orderByChild('timestamp'));
+            const q = window.query(
+                chatRef, 
+                window.orderByChild('timestamp'), 
+                window.limitToLast(50) 
+            );
 
             window.onChildAdded(q, (snapshot) => {
                 if(window[`pChatActiveRoom_${winId}`] !== roomID) return; 
