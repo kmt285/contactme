@@ -32,31 +32,50 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT && !admin.apps.length) {
     }
 }
 
-// --- 🆕 Serverless MongoDB Connection Logic 🆕 ---
-let isConnected = false;
+// --- 🆕 Serverless MongoDB Connection Cache Logic 🆕 ---
+// Global namespace ကိုသုံးပြီး connection ကို သိမ်းထားပါမယ်
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-    if (isConnected) return;
-    try {
-        // 💡 ၅ စက္ကန့်အတွင်း မချိတ်နိုင်ပါက Hang မဖြစ်စေဘဲ Error တန်းပြရန်
-        await mongoose.connect(MONGO_URI, {
+    // Connection ရှိပြီးသားဆိုရင် အသစ်မချိတ်ဘဲ ရှိပြီးသားကိုပဲ ပြန်သုံးပါမယ် (Connection Pool Exhaustion ကို ကာကွယ်ရန်)
+    if (cached.conn) {
+        return cached.conn;
+    }
+
+    if (!cached.promise) {
+        const opts = {
+            bufferCommands: false,
             serverSelectionTimeoutMS: 5000, 
             socketTimeoutMS: 45000
+        };
+
+        cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+            console.log('✅ MongoDB Connected (Serverless Cached)');
+            return mongoose;
         });
-        isConnected = true;
-        console.log('✅ MongoDB Connected');
+    }
+
+    try {
+        cached.conn = await cached.promise;
     } catch (error) {
+        cached.promise = null;
         console.error('❌ DB Connection Error:', error.message);
         throw error;
     }
+
+    return cached.conn;
 };
 
-// 💡 API Route တိုင်းအတွက် DB ချိတ်/မချိတ် စစ်ဆေးမည့် Middleware
+// API Route တိုင်းအတွက် DB ချိတ်/မချိတ် စစ်ဆေးမည့် Middleware
 app.use(async (req, res, next) => {
     if (req.path.startsWith('/api')) {
         try {
             await connectDB();
         } catch (err) {
-            // DB မချိတ်မိပါက ၁၀ စက္ကန့်ကြာအောင် မစောင့်တော့ဘဲ ချက်ချင်း 500 Error ပြန်ပို့မည်
             return res.status(500).json({ 
                 success: false, 
                 message: "Database connection timeout.", 
