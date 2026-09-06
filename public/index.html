@@ -1268,7 +1268,7 @@ const checkAndStartListener = setInterval(() => {
             msgInput.placeholder = "Sending...";
 
             try {
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000));
                 
                 const pushPromise = window.push(window.ref(window.db, 'global_chat'), {
                     displayName: displayName,
@@ -1428,24 +1428,32 @@ window.onValue(callSignalRef, (snapshot) => {
             inputEl.disabled = true;
 
             try {
-        const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
-        await window.push(window.ref(window.db, `private_chats/${roomID}`), {
-            sender: myUser,
-            message: encryptedMsg,
-            timestamp: window.serverTimestamp(),
-            status: 'sent'
-        });
-
-        // 💡 Target User ရဲ့ Inbox ထဲကို မိမိနာမည်နဲ့ Unread ဖြစ်ကြောင်း အချိန်မှတ်ထားလိုက်ပါမည်
-            const targetUser = window[`pChatTarget_${winId}`];
-            if (targetUser) {
-                window.update(window.ref(window.db, `signals/${targetUser}`), {
-                    [myUser]: Date.now() 
+                const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
+                
+                // 🆕 VPN မချိတ်ထားပါက သိနိုင်ရန် 5 Seconds Timeout ထည့်သွင်းခြင်း
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000));
+                
+                const pushPromise = window.push(window.ref(window.db, `private_chats/${roomID}`), {
+                    sender: myUser,
+                    message: encryptedMsg,
+                    timestamp: window.serverTimestamp(),
+                    status: 'sent'
                 });
-            }
-        
-    } catch(e) { 
-                customAlert("Transmission failed. Network anomaly detected.", "Error");
+
+                // Promise.race ဖြင့် Push လုပ်ခြင်းနှင့် Timeout ကို အပြိုင်စစ်ဆေးခြင်း
+                await Promise.race([pushPromise, timeout]);
+
+                // 💡 Target User ရဲ့ Inbox ထဲကို မိမိနာမည်နဲ့ Unread ဖြစ်ကြောင်း အချိန်မှတ်ထားလိုက်ပါမည်
+                const targetUser = window[`pChatTarget_${winId}`];
+                if (targetUser) {
+                    window.update(window.ref(window.db, `signals/${targetUser}`), {
+                        [myUser]: Date.now() 
+                    });
+                }
+                
+            } catch(e) { 
+                // 🆕 VPN Error Alert ပြသခြင်း
+                customAlert("Connection Failed. A VPN might be required to access the secure network.", "Network Error");
             } finally {
                 inputEl.disabled = false;
                 inputEl.focus();
@@ -1475,8 +1483,22 @@ window.startWebRTCCall = async function(winId) {
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
         window.pcStarted = true;
 
-        // Get Camera/Mic
-        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // 🆕 Get Camera/Mic with Desktop Fallback Logic
+        let localStream;
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (mediaErr) {
+            try {
+                // Camera မရှိပါက Audio သီးသန့်ဖြင့် ဆက်လက်ကြိုးစားမည်
+                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                customAlert("Camera not detected on this device. Voice call only started.", "Hardware Notice");
+            } catch (audioErr) {
+                customAlert("Failed to access Camera and Microphone. Please check permissions.", "Hardware Error");
+                endWebRTCCall(winId);
+                return;
+            }
+        }
+
         window.localStreams[roomID] = localStream;
         document.getElementById(`localVideo_${winId}`).srcObject = localStream;
 
@@ -1521,7 +1543,7 @@ window.startWebRTCCall = async function(winId) {
         });
 
     } catch (e) {
-        customAlert("Failed to access Camera/Microphone.", "Hardware Error");
+        customAlert("WebRTC Error: Connection could not be established.", "Error");
         endWebRTCCall(winId);
     }
 };
@@ -1537,8 +1559,22 @@ window.answerWebRTCCall = async function(winId) {
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
         window.pcStarted = true;
 
-        // Get Camera/Mic
-        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // 🆕 Get Camera/Mic with Desktop Fallback Logic
+        let localStream;
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (mediaErr) {
+            try {
+                // Camera မရှိပါက Audio သီးသန့်ဖြင့် ဆက်လက်ကြိုးစားမည်
+                localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                customAlert("Camera not detected on this device. Answering as Voice call.", "Hardware Notice");
+            } catch (audioErr) {
+                customAlert("Failed to access Camera and Microphone. Please check permissions.", "Hardware Error");
+                endWebRTCCall(winId);
+                return;
+            }
+        }
+
         window.localStreams[roomID] = localStream;
         document.getElementById(`localVideo_${winId}`).srcObject = localStream;
 
@@ -1579,7 +1615,7 @@ window.answerWebRTCCall = async function(winId) {
         });
 
     } catch (e) {
-        customAlert("Failed to access Camera/Microphone.", "Hardware Error");
+        customAlert("WebRTC Error: Connection could not be established.", "Error");
         endWebRTCCall(winId);
     }
 };
