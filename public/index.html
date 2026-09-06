@@ -745,17 +745,17 @@
                             <button id="btnEnd_${winId}" onclick="endWebRTCCall('${winId}')" style="background:#ff0000; border:outset 1px; font-size:11px; cursor:pointer; color:white; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">🛑 End</button>
                         </div>
 
-                        <!-- 🆕 Video Display Area (အသစ်ထည့်ထားသည်) -->
-                        <div id="pVideoArea_${winId}" style="display:none; flex-direction:row; height: 160px; background:#111; border-bottom: 1px dashed #333;">
-                            <div style="flex:1; position:relative; border-right: 1px solid #555;">
-                                <video id="localVideo_${winId}" autoplay muted style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
-                                <span style="position:absolute; bottom:5px; left:5px; color:yellow; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">You</span>
-                            </div>
-                            <div style="flex:1; position:relative;">
-                                <video id="remoteVideo_${winId}" autoplay style="width:100%; height:100%; object-fit:cover;"></video>
-                                <span style="position:absolute; bottom:5px; left:5px; color:cyan; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">Target</span>
-                            </div>
-                        </div>
+                        <!-- 🆕 Video Display Area (playsinline ထည့်သွင်းထားသည်) -->
+<div id="pVideoArea_${winId}" style="display:none; flex-direction:row; height: 160px; background:#111; border-bottom: 1px dashed #333;">
+    <div style="flex:1; position:relative; border-right: 1px solid #555;">
+        <video id="localVideo_${winId}" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
+        <span style="position:absolute; bottom:5px; left:5px; color:yellow; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">You</span>
+    </div>
+    <div style="flex:1; position:relative;">
+        <video id="remoteVideo_${winId}" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+        <span style="position:absolute; bottom:5px; left:5px; color:cyan; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">Target</span>
+    </div>
+</div>
                         
                         <!-- Chat Area -->
                         <div id="pChatMessages_${winId}" style="flex:1; background:#000; color:#00ff00; overflow-y:auto; padding:8px; font-family: 'Courier New', monospace; font-size:14px; line-height:1.5; text-shadow: 0 0 3px rgba(0,255,0,0.3);">
@@ -1483,63 +1483,70 @@ window.startWebRTCCall = async function(winId) {
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
         window.pcStarted = true;
 
-        // 🆕 Get Camera/Mic with Desktop Fallback Logic
         let localStream;
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         } catch (mediaErr) {
             try {
-                // Camera မရှိပါက Audio သီးသန့်ဖြင့် ဆက်လက်ကြိုးစားမည်
                 localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
                 customAlert("Camera not detected on this device. Voice call only started.", "Hardware Notice");
             } catch (audioErr) {
-                customAlert("Failed to access Camera and Microphone. Please check permissions.", "Hardware Error");
-                endWebRTCCall(winId);
-                return;
+                customAlert("Failed to access Camera and Microphone.", "Hardware Error");
+                endWebRTCCall(winId); return;
             }
         }
 
         window.localStreams[roomID] = localStream;
-        document.getElementById(`localVideo_${winId}`).srcObject = localStream;
+        const localVideo = document.getElementById(`localVideo_${winId}`);
+        localVideo.srcObject = localStream;
+        localVideo.play().catch(e => console.log(e)); // Ensure mobile play
 
-        // Setup PeerConnection
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
 
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-        // Remote Video ဝင်လာရင် ပြပေးရန်
         pc.ontrack = event => {
-            document.getElementById(`remoteVideo_${winId}`).srcObject = event.streams[0];
+            const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
+            if (remoteVideo.srcObject !== event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+                remoteVideo.play().catch(e => console.log(e));
+            }
         };
 
-        // ICE Candidates ကို Firebase ပေါ်တင်ရန် (Caller -> Callee)
         pc.onicecandidate = event => {
             if (event.candidate) {
                 window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), event.candidate.toJSON());
             }
         };
 
-        // Create Offer & Send to Firebase
-        const offerDescription = await pc.createOffer();
-        await pc.setLocalDescription(offerDescription);
-        
-        const offer = { type: offerDescription.type, sdp: offerDescription.sdp };
-        await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), offer);
+        // 🆕 Race Condition ကာကွယ်ရန် ICE Candidates များကို Queue ထဲအရင်ထည့်မည်
+        let remoteCandidatesQueue = [];
 
-        // Target က Answer ပြန်လုပ်တာကို စောင့်ဖတ်ရန်
-        window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/answer`), snapshot => {
+        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), snapshot => {
             const data = snapshot.val();
-            if (data && !pc.currentRemoteDescription) {
-                const answerDescription = new RTCSessionDescription(data);
-                pc.setRemoteDescription(answerDescription);
+            if (data) {
+                if (pc.remoteDescription && pc.remoteDescription.type) {
+                    pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
+                } else {
+                    remoteCandidatesQueue.push(data); // Remote မချိတ်ရသေးပါက ခဏစောင့်မည်
+                }
             }
         });
 
-        // Target ရဲ့ ICE Candidates ကို ယူရန်
-        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), snapshot => {
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+        const offer = { type: offerDescription.type, sdp: offerDescription.sdp };
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), offer);
+
+        window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/answer`), async snapshot => {
             const data = snapshot.val();
-            if (data) pc.addIceCandidate(new RTCIceCandidate(data));
+            if (data && !pc.currentRemoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                // Remote ချိတ်ဆက်ပြီးသည်နှင့် Queue ထဲက IP များကို ဆက်တိုက်ထည့်မည်
+                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
+                remoteCandidatesQueue = [];
+            }
         });
 
     } catch (e) {
@@ -1559,24 +1566,23 @@ window.answerWebRTCCall = async function(winId) {
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
         window.pcStarted = true;
 
-        // 🆕 Get Camera/Mic with Desktop Fallback Logic
         let localStream;
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         } catch (mediaErr) {
             try {
-                // Camera မရှိပါက Audio သီးသန့်ဖြင့် ဆက်လက်ကြိုးစားမည်
                 localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
                 customAlert("Camera not detected on this device. Answering as Voice call.", "Hardware Notice");
             } catch (audioErr) {
-                customAlert("Failed to access Camera and Microphone. Please check permissions.", "Hardware Error");
-                endWebRTCCall(winId);
-                return;
+                customAlert("Failed to access Camera and Microphone.", "Hardware Error");
+                endWebRTCCall(winId); return;
             }
         }
 
         window.localStreams[roomID] = localStream;
-        document.getElementById(`localVideo_${winId}`).srcObject = localStream;
+        const localVideo = document.getElementById(`localVideo_${winId}`);
+        localVideo.srcObject = localStream;
+        localVideo.play().catch(e => console.log(e)); // Ensure mobile play
 
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
@@ -1584,17 +1590,33 @@ window.answerWebRTCCall = async function(winId) {
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
         pc.ontrack = event => {
-            document.getElementById(`remoteVideo_${winId}`).srcObject = event.streams[0];
+            const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
+            if (remoteVideo.srcObject !== event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+                remoteVideo.play().catch(e => console.log(e));
+            }
         };
 
-        // ICE Candidates ကို Firebase ပေါ်တင်ရန် (Callee -> Caller)
         pc.onicecandidate = event => {
             if (event.candidate) {
                 window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), event.candidate.toJSON());
             }
         };
 
-        // Caller ရဲ့ Offer ကိုဖတ်ပြီး Answer ပြန်လုပ်ရန်
+        // 🆕 Race Condition ကာကွယ်ရန် ICE Candidates များကို Queue ထဲအရင်ထည့်မည်
+        let remoteCandidatesQueue = [];
+
+        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                if (pc.remoteDescription && pc.remoteDescription.type) {
+                    pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
+                } else {
+                    remoteCandidatesQueue.push(data); // Remote မချိတ်ရသေးပါက ခဏစောင့်မည်
+                }
+            }
+        });
+
         window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/offer`), async (snapshot) => {
             const offerData = snapshot.val();
             if (offerData && !pc.currentRemoteDescription) {
@@ -1602,16 +1624,13 @@ window.answerWebRTCCall = async function(winId) {
                 
                 const answerDescription = await pc.createAnswer();
                 await pc.setLocalDescription(answerDescription);
-                
                 const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
                 await window.set(window.ref(window.db, `webrtc_calls/${roomID}/answer`), answer);
-            }
-        });
 
-        // Caller ရဲ့ ICE Candidates ကို ယူရန်
-        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), snapshot => {
-            const data = snapshot.val();
-            if (data) pc.addIceCandidate(new RTCIceCandidate(data));
+                // Remote ချိတ်ဆက်ပြီးသည်နှင့် Queue ထဲက IP များကို ဆက်တိုက်ထည့်မည်
+                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
+                remoteCandidatesQueue = [];
+            }
         });
 
     } catch (e) {
