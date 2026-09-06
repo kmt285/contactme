@@ -1020,15 +1020,20 @@
             localStorage.removeItem('chatDisplayName');
             sessionStorage.removeItem('chatSessionStartTime');
             
-            // မည်သည့် App Window ဖြစ်ကြောင်း စစ်ဆေး၍ ပိတ်ခြင်း
-            const globalMain = document.getElementById(`chatMain_${winId}`);
-            const privateMain = document.getElementById(`pChatMain_${winId}`);
+            // 🆕 ဖွင့်ထားသမျှ Chat Window (Global ရော Private ပါ) အားလုံးကိုရှာပြီး Login မျက်နှာပြင်သို့ ပြန်ပို့မည်
+            document.querySelectorAll('[id^="chatMain_"]').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('[id^="pChatMain_"]').forEach(el => el.style.display = 'none');
             
-            if (globalMain) globalMain.style.display = 'none';
-            if (privateMain) privateMain.style.display = 'none';
-            
-            document.getElementById(`chatLogin_${winId}`).style.display = 'flex';
-            document.getElementById(`loginPass_${winId}`).value = '';
+            document.querySelectorAll('[id^="chatLogin_"]').forEach(el => el.style.display = 'flex');
+            document.querySelectorAll('[id^="loginPass_"]').forEach(el => el.value = '');
+
+            // Video Call များ ခေါ်ထားပါက အားလုံးဖြတ်ချမည်
+            for (let key in window.webrtcPCs) {
+                if(window.webrtcPCs[key]) window.webrtcPCs[key].close();
+            }
+            window.webrtcPCs = {};
+            window.localStreams = {};
+            window.pcStarted = false;
         };
         
         // --- Toggle Auth View ---
@@ -1194,9 +1199,15 @@ window.initSignalListener = function(myUsername) {
         const data = snapshot.val();
         if (!data) return; // Unread စာမရှိလျှင် ကျော်မည်
 
-        // data ထဲတွင် ပို့ထားသူများ၏ နာမည်နှင့် အချိန်များ ပါဝင်ပါမည် (ဥပမာ - { "aung": 169..., "zaw": 169... })
         Object.keys(data).forEach(sender => {
             const signalTime = data[sender];
+            
+            // 🆕 Error Signal (@null) ဝင်လာပါက Alert မပြဘဲ အလိုအလျောက် ဖျက်ပစ်မည်
+            if (!sender || sender === 'null') {
+                window.update(window.ref(window.db, `signals/${myUsername}`), { [sender]: null });
+                return;
+            }
+
             let isAlreadyConnected = false;
 
             // လက်ရှိမှာ အဆိုပါလူနဲ့ စကားပြောဖို့ ဖွင့်ထားပြီးသားလား စစ်ဆေးခြင်း
@@ -1247,7 +1258,13 @@ const checkAndStartListener = setInterval(() => {
             const message = msgInput.value.trim();
             const username = localStorage.getItem('chatUsername');
 
-            if (!message || !username) return; 
+            // 🆕 Logout လုပ်သွားပြီးနောက် စာခိုးပို့ခြင်းမှ ကာကွယ်ရန်
+            if (!username || username === 'null') {
+                customAlert("Session expired. Please log in again.", "Security Alert");
+                window.chatLogout(winId);
+                return;
+            }
+            if (!message) return; 
 
             const lastMsgTime = localStorage.getItem('lastMsgTime') || 0;
             if (Date.now() - lastMsgTime < 3000) { 
@@ -1422,6 +1439,13 @@ window.onValue(callSignalRef, (snapshot) => {
             const inputEl = document.getElementById(`pChatInput_${winId}`);
             const msgText = inputEl.value.trim();
 
+            // 🆕 Logout လုပ်သွားပြီးနောက် စာခိုးပို့ခြင်းမှ ကာကွယ်ရန်
+            if (!myUser || myUser === 'null') {
+                customAlert("Session expired. Please log in again.", "Security Alert");
+                window.chatLogout(winId);
+                return;
+            }
+
             if(!msgText || !roomID) return;
 
             inputEl.value = '';
@@ -1429,8 +1453,6 @@ window.onValue(callSignalRef, (snapshot) => {
 
             try {
                 const encryptedMsg = CryptoJS.AES.encrypt(msgText, roomID).toString();
-                
-                // 🆕 VPN မချိတ်ထားပါက သိနိုင်ရန် 5 Seconds Timeout ထည့်သွင်းခြင်း
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000));
                 
                 const pushPromise = window.push(window.ref(window.db, `private_chats/${roomID}`), {
@@ -1440,20 +1462,17 @@ window.onValue(callSignalRef, (snapshot) => {
                     status: 'sent'
                 });
 
-                // Promise.race ဖြင့် Push လုပ်ခြင်းနှင့် Timeout ကို အပြိုင်စစ်ဆေးခြင်း
                 await Promise.race([pushPromise, timeout]);
 
-                // 💡 Target User ရဲ့ Inbox ထဲကို မိမိနာမည်နဲ့ Unread ဖြစ်ကြောင်း အချိန်မှတ်ထားလိုက်ပါမည်
                 const targetUser = window[`pChatTarget_${winId}`];
                 if (targetUser) {
                     window.update(window.ref(window.db, `signals/${targetUser}`), {
                         [myUser]: Date.now() 
                     });
                 }
-                
+        
             } catch(e) { 
-                // 🆕 VPN Error Alert ပြသခြင်း
-                customAlert("Connection Failed. A VPN might be required to access the secure network.", "Network Error");
+                customAlert("Transmission failed. Network anomaly detected.", "Error");
             } finally {
                 inputEl.disabled = false;
                 inputEl.focus();
