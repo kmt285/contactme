@@ -1350,29 +1350,32 @@ const checkAndStartListener = setInterval(() => {
                 </div>
             `;
 
-            // 🆕 Call Button ကို Connect ဖြစ်တာနဲ့ ပြပေးမည်
-document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
+            // Call Button ကို Connect ဖြစ်တာနဲ့ ပြပေးမည်
+            document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
 
-// 🆕 Firebase Signaling Listener (Offer ဝင်လာမလာ စောင့်ကြည့်မည်)
-const callSignalRef = window.ref(window.db, `webrtc_calls/${roomID}/offer`);
-window.onValue(callSignalRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data && !window.pcStarted) {
-        // Offer ဝင်လာလျှင် Answer ခလုတ်ပြမည်
-        document.getElementById(`btnAnswer_${winId}`).style.display = 'inline-block';
-        document.getElementById(`btnCall_${winId}`).style.display = 'none';
-        
-        // Chat ထဲမှာ Call ဝင်နေကြောင်း စာထွက်ပြမည်
-        const div = document.createElement('div');
-        div.innerHTML = `<span style="color: yellow; font-weight:bold;">[SYSTEM] Incoming P2P Video Call from @${targetUser}...</span>`;
-        document.getElementById(`pChatMessages_${winId}`).appendChild(div);
-    } else if (!data) {
-        // Call ပြီးဆုံးသွားလျှင် (သို့) ဖျက်လိုက်လျှင်
-        if(window.webrtcPCs && window.webrtcPCs[roomID]) endWebRTCCall(winId, true);
-        document.getElementById(`btnAnswer_${winId}`).style.display = 'none';
-        document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
-    }
-});
+            // 🆕 1. ယခင် WebRTC Listener အဟောင်းရှိနေပါက အရင်ဖျက်ပစ်ပါမည် (Duplicate မဖြစ်စေရန်)
+            if (window[`callSignalUnsubscribe_${winId}`]) {
+                window[`callSignalUnsubscribe_${winId}`]();
+            }
+
+            // Firebase Signaling Listener (Offer ဝင်လာမလာ စောင့်ကြည့်မည်)
+            const callSignalRef = window.ref(window.db, `webrtc_calls/${roomID}/offer`);
+            // 🆕 Listener ကို မှတ်ထားမည်
+            window[`callSignalUnsubscribe_${winId}`] = window.onValue(callSignalRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && !window.pcStarted) {
+                    document.getElementById(`btnAnswer_${winId}`).style.display = 'inline-block';
+                    document.getElementById(`btnCall_${winId}`).style.display = 'none';
+                    
+                    const div = document.createElement('div');
+                    div.innerHTML = `<span style="color: yellow; font-weight:bold;">[SYSTEM] Incoming P2P Video Call from @${targetUser}...</span>`;
+                    document.getElementById(`pChatMessages_${winId}`).appendChild(div);
+                } else if (!data) {
+                    if(window.webrtcPCs && window.webrtcPCs[roomID]) endWebRTCCall(winId, true);
+                    document.getElementById(`btnAnswer_${winId}`).style.display = 'none';
+                    document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
+                }
+            });
 
             document.getElementById(`pChatInput_${winId}`).disabled = false;
             window.update(window.ref(window.db, `signals/${myUser}`), {
@@ -1387,15 +1390,19 @@ window.onValue(callSignalRef, (snapshot) => {
                 window.limitToLast(50) 
             );
 
-            window.onChildAdded(q, (snapshot) => {
+            // 🆕 2. ယခင် Chat Listener အဟောင်းရှိနေပါက အရင်ဖျက်ပစ်ပါမည် (စာ ၂ ကြောင်းထပ်ခြင်း ကာကွယ်ရန်)
+            if (window[`pChatListenerUnsubscribe_${winId}`]) {
+                window[`pChatListenerUnsubscribe_${winId}`]();
+            }
+
+            // 🆕 Listener ကို မှတ်ထားမည်
+            window[`pChatListenerUnsubscribe_${winId}`] = window.onChildAdded(q, (snapshot) => {
                 if(window[`pChatActiveRoom_${winId}`] !== roomID) return; 
 
                 const data = snapshot.val();
-                const msgKey = snapshot.key; // Database ထဲက Message ID ကို ယူခြင်း
+                const msgKey = snapshot.key; 
                 const isMe = (data.sender === myUser);
 
-                // 🚨 ဖတ်ပြီးကြောင်း (Seen) Update လုပ်ခြင်း 🚨
-                // ကိုယ်ပို့တဲ့စာမဟုတ်ဘူးဆိုရင် ဖတ်လိုက်ပြီဖြစ်တဲ့အတွက် Database မှာ 'seen' အဖြစ် ပြောင်းပေးမည်
                 if (!isMe && data.status !== 'seen') {
                     const msgRef = window.ref(window.db, `private_chats/${roomID}/${msgKey}`);
                     window.update(msgRef, { status: 'seen' }).catch(e => console.log(e));
@@ -1413,7 +1420,6 @@ window.onValue(callSignalRef, (snapshot) => {
                 
                 const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
 
-                // Terminal စတိုင် အမည်းရောင်ပေါ်မှ အရောင်များ
                 const nameColor = isMe ? '#00ffff' : '#ffb000'; 
                 const textColor = isMe ? '#ffffff' : '#00ff00';
 
@@ -1431,7 +1437,7 @@ window.onValue(callSignalRef, (snapshot) => {
                 msgBox.scrollTop = msgBox.scrollHeight;
             });
         };
-
+        
         // --- 6. Send Private Message (E2EE) ---
         window.sendPrivateMessage = async function(winId) {
             const myUser = localStorage.getItem('chatUsername');
