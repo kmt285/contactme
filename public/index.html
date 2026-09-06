@@ -909,11 +909,37 @@
         }
 
         function closeWindow(winId) { 
-            const win = document.getElementById(winId);
-            if(win) win.remove();
-            const tbItem = document.getElementById(`tb_${winId}`);
-            if(tbItem) tbItem.remove();
+    // 🆕 WebRTC Memory Leak နှင့် Camera ဆက်ပွင့်နေခြင်း ပြဿနာကို ဖြေရှင်းခြင်း
+    
+    // ဒီ Window ဟာ Private Chat Window ဖြစ်သလား စစ်ဆေးမယ်
+    if (window[`pChatActiveRoom_${winId}`]) {
+        
+        // ၁။ Call ခေါ်ထားတယ်ဆိုရင် Video/Audio Stream တွေနဲ့ PeerConnection ကို သေချာအရင်ဖြတ်မယ်
+        if (window.webrtcPCs && window.webrtcPCs[window[`pChatActiveRoom_${winId}`]]) {
+            endWebRTCCall(winId); 
         }
+        
+        // ၂။ Firebase Memory Leak မဖြစ်အောင် Listener တွေကိုပါ Unsubscribe လုပ်မယ်
+        if (window[`callSignalUnsubscribe_${winId}`]) {
+            window[`callSignalUnsubscribe_${winId}`]();
+            delete window[`callSignalUnsubscribe_${winId}`];
+        }
+        if (window[`pChatListenerUnsubscribe_${winId}`]) {
+            window[`pChatListenerUnsubscribe_${winId}`]();
+            delete window[`pChatListenerUnsubscribe_${winId}`];
+        }
+        
+        // ၃။ Window နဲ့သက်ဆိုင်တဲ့ Global Variable အမှိုက်တွေကို ရှင်းမယ်
+        delete window[`pChatActiveRoom_${winId}`];
+        delete window[`pChatTarget_${winId}`];
+    }
+
+    // မူလအတိုင်း Window ကို DOM ထဲကနေ ဖျက်မယ်
+    const win = document.getElementById(winId);
+    if(win) win.remove();
+    const tbItem = document.getElementById(`tb_${winId}`);
+    if(tbItem) tbItem.remove();
+}
 
         async function sendMsg(winId) {
             const btn = document.getElementById(`sBtn_${winId}`);
