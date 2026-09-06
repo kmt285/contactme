@@ -32,10 +32,41 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT && !admin.apps.length) {
     }
 }
 
-// --- MongoDB ချိတ်ဆက်ခြင်း ---
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.error('❌ DB Error:', err));
+// --- 🆕 Serverless MongoDB Connection Logic 🆕 ---
+let isConnected = false;
+const connectDB = async () => {
+    if (isConnected) return;
+    try {
+        // 💡 ၅ စက္ကန့်အတွင်း မချိတ်နိုင်ပါက Hang မဖြစ်စေဘဲ Error တန်းပြရန်
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 5000, 
+            socketTimeoutMS: 45000
+        });
+        isConnected = true;
+        console.log('✅ MongoDB Connected');
+    } catch (error) {
+        console.error('❌ DB Connection Error:', error.message);
+        throw error;
+    }
+};
+
+// 💡 API Route တိုင်းအတွက် DB ချိတ်/မချိတ် စစ်ဆေးမည့် Middleware
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        try {
+            await connectDB();
+        } catch (err) {
+            // DB မချိတ်မိပါက ၁၀ စက္ကန့်ကြာအောင် မစောင့်တော့ဘဲ ချက်ချင်း 500 Error ပြန်ပို့မည်
+            return res.status(500).json({ 
+                success: false, 
+                message: "Database connection timeout.", 
+                error: err.message 
+            });
+        }
+    }
+    next();
+});
+
 
 // 🚨 Vercel အတွက် အရေးကြီးသောပြင်ဆင်ချက်: Model တွေ ရှိပြီးသားဆိုရင် ထပ်မလုပ်အောင် (||) ဖြင့် ကာကွယ်ခြင်း 🚨
 const ConfigSchema = new mongoose.Schema({ type: { type: String, default: "desktop", unique: true }, data: { type: Object, default: {} } });
