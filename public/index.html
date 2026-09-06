@@ -739,6 +739,22 @@
                             <span style="color: #00ff00; font-family: 'Courier New', monospace; font-weight:bold; margin-right:5px;">&gt; CONNECT TO:</span>
                             <input type="text" id="pTargetUser_${winId}" placeholder="username" style="flex:1; background: transparent; border: none; border-bottom: 1px dotted #00ff00; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px; font-weight: bold;">
                             <button onclick="startPrivateChat('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:10px; font-family: 'MS Sans Serif', sans-serif;">Connect</button>
+                            <!-- 🆕 WebRTC Call Buttons (အသစ်ထည့်ထားသည်) -->
+                            <button id="btnCall_${winId}" onclick="startWebRTCCall('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">📹 Call</button>
+                            <button id="btnAnswer_${winId}" onclick="answerWebRTCCall('${winId}')" style="background:#00ff00; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none; font-weight:bold;">📞 Answer</button>
+                            <button id="btnEnd_${winId}" onclick="endWebRTCCall('${winId}')" style="background:#ff0000; border:outset 1px; font-size:11px; cursor:pointer; color:white; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">🛑 End</button>
+                        </div>
+
+                        <!-- 🆕 Video Display Area (အသစ်ထည့်ထားသည်) -->
+                        <div id="pVideoArea_${winId}" style="display:none; flex-direction:row; height: 160px; background:#111; border-bottom: 1px dashed #333;">
+                            <div style="flex:1; position:relative; border-right: 1px solid #555;">
+                                <video id="localVideo_${winId}" autoplay muted style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
+                                <span style="position:absolute; bottom:5px; left:5px; color:yellow; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">You</span>
+                            </div>
+                            <div style="flex:1; position:relative;">
+                                <video id="remoteVideo_${winId}" autoplay style="width:100%; height:100%; object-fit:cover;"></video>
+                                <span style="position:absolute; bottom:5px; left:5px; color:cyan; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">Target</span>
+                            </div>
                         </div>
                         
                         <!-- Chat Area -->
@@ -1317,6 +1333,30 @@ const checkAndStartListener = setInterval(() => {
                 </div>
             `;
 
+            // 🆕 Call Button ကို Connect ဖြစ်တာနဲ့ ပြပေးမည်
+document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
+
+// 🆕 Firebase Signaling Listener (Offer ဝင်လာမလာ စောင့်ကြည့်မည်)
+const callSignalRef = window.ref(window.db, `webrtc_calls/${roomID}/offer`);
+window.onValue(callSignalRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data && !window.pcStarted) {
+        // Offer ဝင်လာလျှင် Answer ခလုတ်ပြမည်
+        document.getElementById(`btnAnswer_${winId}`).style.display = 'inline-block';
+        document.getElementById(`btnCall_${winId}`).style.display = 'none';
+        
+        // Chat ထဲမှာ Call ဝင်နေကြောင်း စာထွက်ပြမည်
+        const div = document.createElement('div');
+        div.innerHTML = `<span style="color: yellow; font-weight:bold;">[SYSTEM] Incoming P2P Video Call from @${targetUser}...</span>`;
+        document.getElementById(`pChatMessages_${winId}`).appendChild(div);
+    } else if (!data) {
+        // Call ပြီးဆုံးသွားလျှင် (သို့) ဖျက်လိုက်လျှင်
+        if(window.webrtcPCs && window.webrtcPCs[roomID]) endWebRTCCall(winId, true);
+        document.getElementById(`btnAnswer_${winId}`).style.display = 'none';
+        document.getElementById(`btnCall_${winId}`).style.display = 'inline-block';
+    }
+});
+
             document.getElementById(`pChatInput_${winId}`).disabled = false;
             window.update(window.ref(window.db, `signals/${myUser}`), {
                 [targetUser]: null 
@@ -1411,6 +1451,173 @@ const checkAndStartListener = setInterval(() => {
                 inputEl.focus();
             }
         };
+
+// --- WebRTC Global Variables ---
+window.webrtcPCs = {};
+window.localStreams = {};
+window.pcStarted = false; // လက်ရှိ Call ခေါ်နေသလား စစ်ဆေးရန်
+
+const rtcConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+// 📞 1. Call စတင်ခေါ်ဆိုသူ (Caller)
+window.startWebRTCCall = async function(winId) {
+    const roomID = window[`pChatActiveRoom_${winId}`];
+    if (!roomID) return customAlert("Please connect to a user first.");
+
+    try {
+        document.getElementById(`btnCall_${winId}`).style.display = 'none';
+        document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
+        document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
+        window.pcStarted = true;
+
+        // Get Camera/Mic
+        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        window.localStreams[roomID] = localStream;
+        document.getElementById(`localVideo_${winId}`).srcObject = localStream;
+
+        // Setup PeerConnection
+        const pc = new RTCPeerConnection(rtcConfig);
+        window.webrtcPCs[roomID] = pc;
+
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        // Remote Video ဝင်လာရင် ပြပေးရန်
+        pc.ontrack = event => {
+            document.getElementById(`remoteVideo_${winId}`).srcObject = event.streams[0];
+        };
+
+        // ICE Candidates ကို Firebase ပေါ်တင်ရန် (Caller -> Callee)
+        pc.onicecandidate = event => {
+            if (event.candidate) {
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), event.candidate.toJSON());
+            }
+        };
+
+        // Create Offer & Send to Firebase
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+        
+        const offer = { type: offerDescription.type, sdp: offerDescription.sdp };
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), offer);
+
+        // Target က Answer ပြန်လုပ်တာကို စောင့်ဖတ်ရန်
+        window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/answer`), snapshot => {
+            const data = snapshot.val();
+            if (data && !pc.currentRemoteDescription) {
+                const answerDescription = new RTCSessionDescription(data);
+                pc.setRemoteDescription(answerDescription);
+            }
+        });
+
+        // Target ရဲ့ ICE Candidates ကို ယူရန်
+        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), snapshot => {
+            const data = snapshot.val();
+            if (data) pc.addIceCandidate(new RTCIceCandidate(data));
+        });
+
+    } catch (e) {
+        customAlert("Failed to access Camera/Microphone.", "Hardware Error");
+        endWebRTCCall(winId);
+    }
+};
+
+// 📞 2. Call လက်ခံသူ (Callee)
+window.answerWebRTCCall = async function(winId) {
+    const roomID = window[`pChatActiveRoom_${winId}`];
+    if (!roomID) return;
+
+    try {
+        document.getElementById(`btnAnswer_${winId}`).style.display = 'none';
+        document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
+        document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
+        window.pcStarted = true;
+
+        // Get Camera/Mic
+        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        window.localStreams[roomID] = localStream;
+        document.getElementById(`localVideo_${winId}`).srcObject = localStream;
+
+        const pc = new RTCPeerConnection(rtcConfig);
+        window.webrtcPCs[roomID] = pc;
+
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        pc.ontrack = event => {
+            document.getElementById(`remoteVideo_${winId}`).srcObject = event.streams[0];
+        };
+
+        // ICE Candidates ကို Firebase ပေါ်တင်ရန် (Callee -> Caller)
+        pc.onicecandidate = event => {
+            if (event.candidate) {
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), event.candidate.toJSON());
+            }
+        };
+
+        // Caller ရဲ့ Offer ကိုဖတ်ပြီး Answer ပြန်လုပ်ရန်
+        window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/offer`), async (snapshot) => {
+            const offerData = snapshot.val();
+            if (offerData && !pc.currentRemoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(offerData));
+                
+                const answerDescription = await pc.createAnswer();
+                await pc.setLocalDescription(answerDescription);
+                
+                const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
+                await window.set(window.ref(window.db, `webrtc_calls/${roomID}/answer`), answer);
+            }
+        });
+
+        // Caller ရဲ့ ICE Candidates ကို ယူရန်
+        window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), snapshot => {
+            const data = snapshot.val();
+            if (data) pc.addIceCandidate(new RTCIceCandidate(data));
+        });
+
+    } catch (e) {
+        customAlert("Failed to access Camera/Microphone.", "Hardware Error");
+        endWebRTCCall(winId);
+    }
+};
+
+// 🛑 3. Call ကို ရပ်ဆိုင်းခြင်း (End Call)
+window.endWebRTCCall = async function(winId, fromRemote = false) {
+    const roomID = window[`pChatActiveRoom_${winId}`];
+    window.pcStarted = false;
+
+    // Camera/Mic မီးပိတ်ရန်
+    if (window.localStreams[roomID]) {
+        window.localStreams[roomID].getTracks().forEach(track => track.stop());
+        delete window.localStreams[roomID];
+    }
+    
+    // Connection ဖြတ်ရန်
+    if (window.webrtcPCs[roomID]) {
+        window.webrtcPCs[roomID].close();
+        delete window.webrtcPCs[roomID];
+    }
+
+    // UI များကို ပုံမှန်အတိုင်း ပြန်ထားရန်
+    const videoArea = document.getElementById(`pVideoArea_${winId}`);
+    if(videoArea) videoArea.style.display = 'none';
+    
+    const btnCall = document.getElementById(`btnCall_${winId}`);
+    const btnAnswer = document.getElementById(`btnAnswer_${winId}`);
+    const btnEnd = document.getElementById(`btnEnd_${winId}`);
+    
+    if(btnCall) btnCall.style.display = 'inline-block';
+    if(btnAnswer) btnAnswer.style.display = 'none';
+    if(btnEnd) btnEnd.style.display = 'none';
+
+    // ကိုယ်က End တာဆိုရင် Firebase ပေါ်က Signal Data တွေပါ ဖျက်ပစ်မည်
+    if (!fromRemote && roomID) {
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null);
+    }
+};
     </script>
 </body>
 </html>
