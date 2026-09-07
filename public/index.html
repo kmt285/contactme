@@ -734,27 +734,43 @@
                             </div>
                         </div>
                         
-                        <!-- Connect / Target Input -->
-                        <div style="display: flex; border-bottom: 1px dashed #333; padding: 5px; background: #000; align-items: center;">
-                            <span style="color: #00ff00; font-family: 'Courier New', monospace; font-weight:bold; margin-right:5px;">&gt; CONNECT TO:</span>
-                            <input type="text" id="pTargetUser_${winId}" placeholder="username" style="flex:1; background: transparent; border: none; border-bottom: 1px dotted #00ff00; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 2px; font-weight: bold;">
-                            <button onclick="startPrivateChat('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:10px; font-family: 'MS Sans Serif', sans-serif;">Connect</button>
-                            <!-- 🆕 WebRTC Call Buttons (အသစ်ထည့်ထားသည်) -->
-                            <button id="btnCall_${winId}" onclick="startWebRTCCall('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">📹 Call</button>
-                            <button id="btnAnswer_${winId}" onclick="answerWebRTCCall('${winId}')" style="background:#00ff00; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none; font-weight:bold;">📞 Answer</button>
-                            <button id="btnEnd_${winId}" onclick="endWebRTCCall('${winId}')" style="background:#ff0000; border:outset 1px; font-size:11px; cursor:pointer; color:white; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">🛑 End</button>
+                        <!-- 🆕 UI/UX Upgrade: Connect / Target Input -->
+                        <div style="border-bottom: 1px dashed #333; padding: 6px; background: #050505; align-items: center; display: flex; justify-content: space-between;">
+                            
+                            <!-- 1. Input Mode -->
+                            <div id="pInputArea_${winId}" style="display: flex; flex:1; align-items: center;">
+                                <span style="color: #00ff00; font-family: 'Courier New', monospace; font-weight:bold; margin-right:5px; font-size: 13px;">&gt; CONNECT:</span>
+                                <input type="text" id="pTargetUser_${winId}" placeholder="target_user" style="flex:1; max-width: 140px; background: #111; border: 1px solid #333; border-radius: 3px; color: #00ffff; font-family: 'Courier New', monospace; outline: none; margin-bottom: 0; padding: 3px 6px; font-weight: bold;">
+                                <button id="btnConnect_${winId}" onclick="startPrivateChat('${winId}')" style="background:#008080; border:outset 1px #fff; font-size:11px; cursor:pointer; color:white; font-weight:bold; margin-left:8px; padding: 4px 10px; font-family: 'MS Sans Serif', sans-serif;">Connect</button>
+                            </div>
+
+                            <!-- 2. Connected Mode (Success) -->
+                            <div id="pConnectedArea_${winId}" style="display: none; flex:1; align-items: center;">
+                                <div style="width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; margin-right: 8px;"></div>
+                                <span style="color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px; font-weight:bold;">LINKED: <span id="pConnectedName_${winId}" style="color:yellow;"></span></span>
+                                <button onclick="disconnectPrivateChat('${winId}')" style="background:#444; border:outset 1px; color:white; font-size:10px; padding: 2px 5px; margin-left: 10px; cursor:pointer;">Unlink</button>
+                            </div>
+
+                            <!-- WebRTC Call Buttons -->
+                            <div style="display: flex; align-items: center;">
+                                <button id="btnCall_${winId}" onclick="startWebRTCCall('${winId}')" style="background:#dfdfdf; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">📹 Call</button>
+                                <button id="btnAnswer_${winId}" onclick="answerWebRTCCall('${winId}')" style="background:#00ff00; border:outset 1px; font-size:11px; cursor:pointer; color:black; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none; font-weight:bold;">📞 Answer</button>
+                                <button id="btnEnd_${winId}" onclick="endWebRTCCall('${winId}')" style="background:#ff0000; border:outset 1px; font-size:11px; cursor:pointer; color:white; margin-left:5px; font-family: 'MS Sans Serif', sans-serif; display:none;">🛑 End</button>
+                            </div>
                         </div>
 
-                        <!-- 🆕 Video Display Area (Media Controls များပါဝင်သည်) -->
+                        <!-- Video Display Area -->
                         <div id="pVideoArea_${winId}" style="display:none; flex-direction:column; background:#111; border-bottom: 1px dashed #333;">
                             <div style="display:flex; flex-direction:row; height: 160px;">
-                                <div style="flex:1; position:relative; border-right: 1px solid #555;">
+                                <div style="flex:1; position:relative; border-right: 1px solid #555; background: #000;">
                                     <video id="localVideo_${winId}" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; transform: scaleX(-1);"></video>
                                     <span style="position:absolute; bottom:5px; left:5px; color:yellow; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">You</span>
                                 </div>
-                                <div style="flex:1; position:relative;">
-                                    <video id="remoteVideo_${winId}" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-                                    <span style="position:absolute; bottom:5px; left:5px; color:cyan; font-size:10px; background:rgba(0,0,0,0.5); padding:2px;">Target</span>
+                                <div style="flex:1; position:relative; background: #000; display:flex; justify-content:center; align-items:center;">
+                                    <!-- Waiting Status UI -->
+                                    <div id="remoteStatus_${winId}" style="position:absolute; z-index:10; color:#00ff00; font-family:monospace; font-size:11px;">Connecting...</div>
+                                    <video id="remoteVideo_${winId}" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:relative; z-index:5;"></video>
+                                    <span style="position:absolute; bottom:5px; left:5px; color:cyan; font-size:10px; background:rgba(0,0,0,0.5); padding:2px; z-index:10;">Target</span>
                                 </div>
                             </div>
                             <!-- Media Controls -->
@@ -1448,6 +1464,11 @@ const checkAndStartListener = setInterval(() => {
             window[`pChatActiveRoom_${winId}`] = roomID;
             window[`pChatTarget_${winId}`] = targetUser;
 
+            // 🆕 UI Toggle: Connect ဖြစ်သွားရင် Input ဖျောက်ပြီး Connected Status ပြမည်
+            document.getElementById(`pInputArea_${winId}`).style.display = 'none';
+            document.getElementById(`pConnectedArea_${winId}`).style.display = 'flex';
+            document.getElementById(`pConnectedName_${winId}`).innerText = `@${targetUser}`;
+
             const msgBox = document.getElementById(`pChatMessages_${winId}`);
             msgBox.innerHTML = `
                 <div style="color: #00aa00; margin-bottom:10px;">
@@ -1658,10 +1679,15 @@ window.startWebRTCCall = async function(winId) {
 
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            if (remoteVideo.srcObject !== event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-                remoteVideo.play().catch(e => console.log(e));
+            // Cross-platform (PC to Mobile) ရုပ်မပေါ်တဲ့ ပြဿနာကို ဖြေရှင်းခြင်း
+            if (!remoteVideo.srcObject) {
+                remoteVideo.srcObject = new MediaStream();
             }
+            remoteVideo.srcObject.addTrack(event.track);
+            
+            // Video ရောက်လာရင် "Connecting..." ဆိုတဲ့ စာသားကို ဖျောက်ပေးမယ်
+            const statusEl = document.getElementById(`remoteStatus_${winId}`);
+            if(statusEl) statusEl.style.display = 'none';
         };
 
         pc.onicecandidate = event => {
@@ -1746,10 +1772,15 @@ window.answerWebRTCCall = async function(winId) {
 
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            if (remoteVideo.srcObject !== event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-                remoteVideo.play().catch(e => console.log(e));
+            // Cross-platform (PC to Mobile) ရုပ်မပေါ်တဲ့ ပြဿနာကို ဖြေရှင်းခြင်း
+            if (!remoteVideo.srcObject) {
+                remoteVideo.srcObject = new MediaStream();
             }
+            remoteVideo.srcObject.addTrack(event.track);
+            
+            // Video ရောက်လာရင် "Connecting..." ဆိုတဲ့ စာသားကို ဖျောက်ပေးမယ်
+            const statusEl = document.getElementById(`remoteStatus_${winId}`);
+            if(statusEl) statusEl.style.display = 'none';
         };
 
         pc.onicecandidate = event => {
@@ -1863,6 +1894,29 @@ window.toggleCam = function(winId) {
             btn.style.color = videoTrack.enabled ? "black" : "red";
         }
     }
+};
+
+        // 🆕 Chat မှ ယာယီဖြတ်တောက်ပြီး User အသစ် ပြန်ရှာရန် 
+window.disconnectPrivateChat = function(winId) {
+    if(window.webrtcPCs && window.webrtcPCs[window[`pChatActiveRoom_${winId}`]]) endWebRTCCall(winId);
+    
+    window[`pChatActiveRoom_${winId}`] = null;
+    window[`pChatTarget_${winId}`] = null;
+    
+    // UI များကို မူလ Input နေရာသို့ ပြန်ထားခြင်း
+    document.getElementById(`pInputArea_${winId}`).style.display = 'flex';
+    document.getElementById(`pConnectedArea_${winId}`).style.display = 'none';
+    document.getElementById(`btnCall_${winId}`).style.display = 'none';
+    
+    const inputEl = document.getElementById(`pChatInput_${winId}`);
+    if(inputEl) inputEl.disabled = true;
+    
+    const msgBox = document.getElementById(`pChatMessages_${winId}`);
+    if(msgBox) msgBox.innerHTML = '<div style="color: #888;">* Secure Link Disconnected.<br>* Enter a new target username to reconnect.</div>';
+    
+    // Listener များရပ်ဆိုင်းခြင်း
+    if (window[`callSignalUnsubscribe_${winId}`]) window[`callSignalUnsubscribe_${winId}`]();
+    if (window[`pChatListenerUnsubscribe_${winId}`]) window[`pChatListenerUnsubscribe_${winId}`]();
 };
     </script>
 </body>
