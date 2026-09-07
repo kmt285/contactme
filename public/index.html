@@ -1620,37 +1620,23 @@ window.pcStarted = false; // လက်ရှိ Call ခေါ်နေသလာ
 
 const rtcConfig = {
     iceServers: [
-        // ၁။ Google ရဲ့ Free STUN Servers (ကိုယ်ပိုင် IP ကို ရှာဖွေရန်)
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        
-        // ၂။ Free TURN Servers (Network မတူတဲ့ ဖုန်း Data အချင်းချင်း ချိတ်ဆက်ပေးရန်)
-        {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        },
-        {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        },
-        {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        }
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }, // 🆕 Twilio ရဲ့ ပိုမိုမြန်ဆန်သော STUN
+        { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+        { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+        { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
     ]
 };
         
+// 📞 1. Call စတင်ခေါ်ဆိုသူ (Caller)
 window.startWebRTCCall = async function(winId) {
     const roomID = window[`pChatActiveRoom_${winId}`];
     if (!roomID) return customAlert("Please connect to a user first.");
 
     try {
-        // 🆕 ပြင်ဆင်ချက် - ဖုန်းခေါ်တိုင်း အဟောင်းတွေကျန်မနေအောင် Database ကို အရင်ရှင်းမယ်
         await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null);
-        
         document.getElementById(`btnCall_${winId}`).style.display = 'none';
         document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
@@ -1672,14 +1658,13 @@ window.startWebRTCCall = async function(winId) {
         window.localStreams[roomID] = localStream;
         const localVideo = document.getElementById(`localVideo_${winId}`);
         localVideo.srcObject = localStream;
-        localVideo.play().catch(e => console.log(e)); // Ensure mobile play
+        localVideo.play().catch(e => console.log(e));
 
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
 
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-        // 🆕 ပြင်ဆင်ချက် - Browser အားလုံးနဲ့ ကိုက်ညီမယ့် Video Tracker
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
             if (event.streams && event.streams[0]) {
@@ -1688,44 +1673,45 @@ window.startWebRTCCall = async function(winId) {
                 if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
                 remoteVideo.srcObject.addTrack(event.track);
             }
-            
-            // Mobile တွေမှာ Auto play ပိတ်ထားရင် အတင်း play ခိုင်းမယ်
-            remoteVideo.play().catch(e => console.log("Play error:", e));
-            
+            remoteVideo.play().catch(e => console.log(e));
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
         };
 
-        // 🆕 ပြင်ဆင်ချက် - Connection အခြေအနေကို စောင့်ကြည့်မယ် (Fail ဖြစ်ရင် သိအောင်လို့)
         pc.oniceconnectionstatechange = () => {
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
-            if(pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+            // 🆕 Disconnected ကို လျစ်လျူရှုပြီး Failed ဖြစ်မှသာ Error ပြမည်
+            if(pc.iceConnectionState === 'failed') {
                 if(statusEl) {
                     statusEl.innerText = "Connection Failed!";
                     statusEl.style.display = 'block';
                     statusEl.style.color = 'red';
                 }
-            } else if (pc.iceConnectionState === 'connected') {
+            } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                 if(statusEl) statusEl.style.display = 'none';
             }
         };
 
+        // 🆕 Cross-browser ICE Format ပြောင်းခြင်း (Error မတက်စေရန်)
         pc.onicecandidate = event => {
             if (event.candidate) {
-                window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), event.candidate.toJSON());
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), {
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
             }
         };
 
-        // 🆕 Race Condition ကာကွယ်ရန် ICE Candidates များကို Queue ထဲအရင်ထည့်မည်
         let remoteCandidatesQueue = [];
 
         window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), snapshot => {
             const data = snapshot.val();
-            if (data) {
+            if (data && data.candidate) {
                 if (pc.remoteDescription && pc.remoteDescription.type) {
                     pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
                 } else {
-                    remoteCandidatesQueue.push(data); // Remote မချိတ်ရသေးပါက ခဏစောင့်မည်
+                    remoteCandidatesQueue.push(data);
                 }
             }
         });
@@ -1735,7 +1721,6 @@ window.startWebRTCCall = async function(winId) {
         const offer = { type: offerDescription.type, sdp: offerDescription.sdp };
         await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), offer);
 
-        // 🆕 Target User ဘက်တွင် Answer/Reject Box ပေါ်စေရန် Signal လှမ်းပို့မည်
         const myUser = localStorage.getItem('chatUsername');
         const targetUser = window[`pChatTarget_${winId}`];
         window.update(window.ref(window.db, `signals/${targetUser}`), { [`${myUser}_CALL`]: roomID });
@@ -1744,7 +1729,6 @@ window.startWebRTCCall = async function(winId) {
             const data = snapshot.val();
             if (data && !pc.currentRemoteDescription) {
                 await pc.setRemoteDescription(new RTCSessionDescription(data));
-                // Remote ချိတ်ဆက်ပြီးသည်နှင့် Queue ထဲက IP များကို ဆက်တိုက်ထည့်မည်
                 remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
                 remoteCandidatesQueue = [];
             }
@@ -1783,14 +1767,13 @@ window.answerWebRTCCall = async function(winId) {
         window.localStreams[roomID] = localStream;
         const localVideo = document.getElementById(`localVideo_${winId}`);
         localVideo.srcObject = localStream;
-        localVideo.play().catch(e => console.log(e)); // Ensure mobile play
+        localVideo.play().catch(e => console.log(e));
 
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
 
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-        // 🆕 ပြင်ဆင်ချက် - Browser အားလုံးနဲ့ ကိုက်ညီမယ့် Video Tracker
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
             if (event.streams && event.streams[0]) {
@@ -1799,44 +1782,44 @@ window.answerWebRTCCall = async function(winId) {
                 if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
                 remoteVideo.srcObject.addTrack(event.track);
             }
-            
-            // Mobile တွေမှာ Auto play ပိတ်ထားရင် အတင်း play ခိုင်းမယ်
-            remoteVideo.play().catch(e => console.log("Play error:", e));
-            
+            remoteVideo.play().catch(e => console.log(e));
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
         };
 
-        // 🆕 ပြင်ဆင်ချက် - Connection အခြေအနေကို စောင့်ကြည့်မယ် (Fail ဖြစ်ရင် သိအောင်လို့)
         pc.oniceconnectionstatechange = () => {
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
-            if(pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+            if(pc.iceConnectionState === 'failed') {
                 if(statusEl) {
                     statusEl.innerText = "Connection Failed!";
                     statusEl.style.display = 'block';
                     statusEl.style.color = 'red';
                 }
-            } else if (pc.iceConnectionState === 'connected') {
+            } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                 if(statusEl) statusEl.style.display = 'none';
             }
         };
 
+        // 🆕 Cross-browser ICE Format ပြောင်းခြင်း
         pc.onicecandidate = event => {
             if (event.candidate) {
-                window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), event.candidate.toJSON());
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), {
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
             }
         };
 
-        // 🆕 Race Condition ကာကွယ်ရန် ICE Candidates များကို Queue ထဲအရင်ထည့်မည်
         let remoteCandidatesQueue = [];
 
         window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), snapshot => {
             const data = snapshot.val();
-            if (data) {
+            if (data && data.candidate) {
                 if (pc.remoteDescription && pc.remoteDescription.type) {
                     pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
                 } else {
-                    remoteCandidatesQueue.push(data); // Remote မချိတ်ရသေးပါက ခဏစောင့်မည်
+                    remoteCandidatesQueue.push(data);
                 }
             }
         });
@@ -1851,7 +1834,6 @@ window.answerWebRTCCall = async function(winId) {
                 const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
                 await window.set(window.ref(window.db, `webrtc_calls/${roomID}/answer`), answer);
 
-                // Remote ချိတ်ဆက်ပြီးသည်နှင့် Queue ထဲက IP များကို ဆက်တိုက်ထည့်မည်
                 remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
                 remoteCandidatesQueue = [];
             }
