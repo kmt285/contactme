@@ -1599,11 +1599,29 @@ window.pcStarted = false; // လက်ရှိ Call ခေါ်နေသလာ
 
 const rtcConfig = {
     iceServers: [
+        // ၁။ Google ရဲ့ Free STUN Servers (ကိုယ်ပိုင် IP ကို ရှာဖွေရန်)
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        
+        // ၂။ Free TURN Servers (Network မတူတဲ့ ဖုန်း Data အချင်းချင်း ချိတ်ဆက်ပေးရန်)
+        {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+        }
     ]
 };
-
+        
 // 📞 1. Call စတင်ခေါ်ဆိုသူ (Caller)
 window.startWebRTCCall = async function(winId) {
     const roomID = window[`pChatActiveRoom_${winId}`];
