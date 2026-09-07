@@ -1621,12 +1621,7 @@ window.pcStarted = false; // လက်ရှိ Call ခေါ်နေသလာ
 const rtcConfig = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' }, // 🆕 Twilio ရဲ့ ပိုမိုမြန်ဆန်သော STUN
-        { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-        { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-        { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
+        { urls: 'stun:stun.cloudflare.com:3478' } // 🆕 Cloudflare ၏ ပိုမိုမြန်ဆန်သော STUN
     ]
 };
         
@@ -1636,6 +1631,11 @@ window.startWebRTCCall = async function(winId) {
     if (!roomID) return customAlert("Please connect to a user first.");
 
     try {
+        // 🆕 အဟောင်းတွေကျန်မနေအောင် အရင်ရှင်းလင်းခြင်း
+        if(window.webrtcPCs[roomID]) { window.webrtcPCs[roomID].close(); delete window.webrtcPCs[roomID]; }
+        const rVideo = document.getElementById(`remoteVideo_${winId}`);
+        if(rVideo) { rVideo.pause(); rVideo.srcObject = null; }
+
         await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null);
         document.getElementById(`btnCall_${winId}`).style.display = 'none';
         document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
@@ -1644,82 +1644,66 @@ window.startWebRTCCall = async function(winId) {
 
         let localStream;
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            // 🆕 Resolution Mismatch မဖြစ်အောင် 640x480 Standard ဖြင့်သာ တောင်းဆိုခြင်း
+            localStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, audio: true });
         } catch (mediaErr) {
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                customAlert("Camera not detected on this device. Voice call only started.", "Hardware Notice");
             } catch (audioErr) {
-                customAlert("Failed to access Camera and Microphone.", "Hardware Error");
-                endWebRTCCall(winId); return;
+                endWebRTCCall(winId); return customAlert("Camera/Mic Error.");
             }
         }
 
         window.localStreams[roomID] = localStream;
         const localVideo = document.getElementById(`localVideo_${winId}`);
         localVideo.srcObject = localStream;
-        localVideo.play().catch(e => console.log(e));
+        localVideo.play().catch(e=>e);
 
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
-
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
-                remoteVideo.srcObject.addTrack(event.track);
-            }
-            remoteVideo.play().catch(e => console.log(e));
+            if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
+            remoteVideo.srcObject.addTrack(event.track);
+            remoteVideo.play().catch(e=>e);
+            
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
         };
 
         pc.oniceconnectionstatechange = () => {
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
-            // 🆕 Disconnected ကို လျစ်လျူရှုပြီး Failed ဖြစ်မှသာ Error ပြမည်
-            if(pc.iceConnectionState === 'failed') {
+            if(pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
                 if(statusEl) {
-                    statusEl.innerText = "Connection Failed!";
-                    statusEl.style.display = 'block';
-                    statusEl.style.color = 'red';
+                    statusEl.innerText = "Connection Failed! Network Blocked.";
+                    statusEl.style.display = 'block'; statusEl.style.color = 'red';
                 }
-            } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                if(statusEl) statusEl.style.display = 'none';
             }
         };
 
-        // 🆕 Cross-browser ICE Format ပြောင်းခြင်း (Error မတက်စေရန်)
         pc.onicecandidate = event => {
             if (event.candidate) {
-                window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), {
-                    candidate: event.candidate.candidate,
-                    sdpMid: event.candidate.sdpMid,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex
-                });
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), event.candidate.toJSON());
             }
         };
 
+        // 🆕 Race Condition (လမ်းကြောင်းပျောက်ခြင်း) ကို ကာကွယ်ရန် Logic အသစ်
         let remoteCandidatesQueue = [];
+        let hasRemoteDesc = false;
 
         window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), snapshot => {
             const data = snapshot.val();
-            if (data && data.candidate) {
-                if (pc.remoteDescription && pc.remoteDescription.type) {
-                    pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
-                } else {
-                    remoteCandidatesQueue.push(data);
-                }
+            if (data) {
+                if (hasRemoteDesc) pc.addIceCandidate(new RTCIceCandidate(data)).catch(e=>e);
+                else remoteCandidatesQueue.push(data);
             }
         });
 
-        const offerDescription = await pc.createOffer();
+        const offerDescription = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await pc.setLocalDescription(offerDescription);
-        const offer = { type: offerDescription.type, sdp: offerDescription.sdp };
-        await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), offer);
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}/offer`), { type: offerDescription.type, sdp: offerDescription.sdp });
 
         const myUser = localStorage.getItem('chatUsername');
         const targetUser = window[`pChatTarget_${winId}`];
@@ -1727,15 +1711,15 @@ window.startWebRTCCall = async function(winId) {
 
         window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/answer`), async snapshot => {
             const data = snapshot.val();
-            if (data && !pc.currentRemoteDescription) {
+            if (data && !hasRemoteDesc) {
                 await pc.setRemoteDescription(new RTCSessionDescription(data));
-                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
+                hasRemoteDesc = true; // Setup ပြီးမှ Queue ကို Run မည်
+                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e=>e));
                 remoteCandidatesQueue = [];
             }
         });
 
     } catch (e) {
-        customAlert("WebRTC Error: Connection could not be established.", "Error");
         endWebRTCCall(winId);
     }
 };
@@ -1746,6 +1730,10 @@ window.answerWebRTCCall = async function(winId) {
     if (!roomID) return;
 
     try {
+        if(window.webrtcPCs[roomID]) { window.webrtcPCs[roomID].close(); delete window.webrtcPCs[roomID]; }
+        const rVideo = document.getElementById(`remoteVideo_${winId}`);
+        if(rVideo) { rVideo.pause(); rVideo.srcObject = null; }
+
         document.getElementById(`btnAnswer_${winId}`).style.display = 'none';
         document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
@@ -1753,13 +1741,11 @@ window.answerWebRTCCall = async function(winId) {
 
         let localStream;
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, audio: true });
         } catch (mediaErr) {
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-                customAlert("Camera not detected on this device. Answering as Voice call.", "Hardware Notice");
             } catch (audioErr) {
-                customAlert("Failed to access Camera and Microphone.", "Hardware Error");
                 endWebRTCCall(winId); return;
             }
         }
@@ -1767,109 +1753,96 @@ window.answerWebRTCCall = async function(winId) {
         window.localStreams[roomID] = localStream;
         const localVideo = document.getElementById(`localVideo_${winId}`);
         localVideo.srcObject = localStream;
-        localVideo.play().catch(e => console.log(e));
+        localVideo.play().catch(e=>e);
 
         const pc = new RTCPeerConnection(rtcConfig);
         window.webrtcPCs[roomID] = pc;
-
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
-                remoteVideo.srcObject.addTrack(event.track);
-            }
-            remoteVideo.play().catch(e => console.log(e));
+            if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
+            remoteVideo.srcObject.addTrack(event.track);
+            remoteVideo.play().catch(e=>e);
+            
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
         };
 
         pc.oniceconnectionstatechange = () => {
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
-            if(pc.iceConnectionState === 'failed') {
+            if(pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
                 if(statusEl) {
-                    statusEl.innerText = "Connection Failed!";
-                    statusEl.style.display = 'block';
-                    statusEl.style.color = 'red';
+                    statusEl.innerText = "Connection Failed! Network Blocked.";
+                    statusEl.style.display = 'block'; statusEl.style.color = 'red';
                 }
-            } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                if(statusEl) statusEl.style.display = 'none';
             }
         };
 
-        // 🆕 Cross-browser ICE Format ပြောင်းခြင်း
         pc.onicecandidate = event => {
             if (event.candidate) {
-                window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), {
-                    candidate: event.candidate.candidate,
-                    sdpMid: event.candidate.sdpMid,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex
-                });
+                window.push(window.ref(window.db, `webrtc_calls/${roomID}/calleeCandidates`), event.candidate.toJSON());
             }
         };
 
         let remoteCandidatesQueue = [];
+        let hasRemoteDesc = false;
 
         window.onChildAdded(window.ref(window.db, `webrtc_calls/${roomID}/callerCandidates`), snapshot => {
             const data = snapshot.val();
-            if (data && data.candidate) {
-                if (pc.remoteDescription && pc.remoteDescription.type) {
-                    pc.addIceCandidate(new RTCIceCandidate(data)).catch(e => console.log(e));
-                } else {
-                    remoteCandidatesQueue.push(data);
-                }
+            if (data) {
+                if (hasRemoteDesc) pc.addIceCandidate(new RTCIceCandidate(data)).catch(e=>e);
+                else remoteCandidatesQueue.push(data);
             }
         });
 
         window.onValue(window.ref(window.db, `webrtc_calls/${roomID}/offer`), async (snapshot) => {
             const offerData = snapshot.val();
-            if (offerData && !pc.currentRemoteDescription) {
+            if (offerData && !hasRemoteDesc) {
                 await pc.setRemoteDescription(new RTCSessionDescription(offerData));
+                hasRemoteDesc = true;
                 
                 const answerDescription = await pc.createAnswer();
                 await pc.setLocalDescription(answerDescription);
-                const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
-                await window.set(window.ref(window.db, `webrtc_calls/${roomID}/answer`), answer);
+                await window.set(window.ref(window.db, `webrtc_calls/${roomID}/answer`), { type: answerDescription.type, sdp: answerDescription.sdp });
 
-                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => console.log(e)));
+                remoteCandidatesQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(e=>e));
                 remoteCandidatesQueue = [];
             }
         });
 
     } catch (e) {
-        customAlert("WebRTC Error: Connection could not be established.", "Error");
         endWebRTCCall(winId);
     }
 };
 
-// 🛑 3. Call ကို ရပ်ဆိုင်းခြင်း (End Call)
+// 🛑 3. Call ကို ရပ်ဆိုင်းခြင်း (End Call & Cleanup)
 window.endWebRTCCall = async function(winId, fromRemote = false) {
     const roomID = window[`pChatActiveRoom_${winId}`];
     window.pcStarted = false;
 
-    // 🆕 Call ပြီးဆုံးပါက Call Signal ကို ဖျက်မည်
     const myUser = localStorage.getItem('chatUsername');
     const targetUser = window[`pChatTarget_${winId}`];
     if (targetUser && !fromRemote) {
         window.update(window.ref(window.db, `signals/${targetUser}`), { [`${myUser}_CALL`]: null }).catch(e=>e);
     }
 
-    // Camera/Mic မီးပိတ်ရန်
     if (window.localStreams[roomID]) {
         window.localStreams[roomID].getTracks().forEach(track => track.stop());
         delete window.localStreams[roomID];
     }
-    
-    // Connection ဖြတ်ရန်
     if (window.webrtcPCs[roomID]) {
         window.webrtcPCs[roomID].close();
         delete window.webrtcPCs[roomID];
     }
 
-    // UI များကို ပုံမှန်အတိုင်း ပြန်ထားရန်
+    // 🆕 CRITICAL: Video tags များကို လုံးဝရှင်းလင်းခြင်း (Memory Leak ကာကွယ်ရန်)
+    const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
+    if(remoteVideo) { remoteVideo.pause(); remoteVideo.srcObject = null; remoteVideo.load(); }
+    
+    const localVideo = document.getElementById(`localVideo_${winId}`);
+    if(localVideo) { localVideo.pause(); localVideo.srcObject = null; localVideo.load(); }
+
     const videoArea = document.getElementById(`pVideoArea_${winId}`);
     if(videoArea) videoArea.style.display = 'none';
     
@@ -1881,9 +1854,8 @@ window.endWebRTCCall = async function(winId, fromRemote = false) {
     if(btnAnswer) btnAnswer.style.display = 'none';
     if(btnEnd) btnEnd.style.display = 'none';
 
-    // ကိုယ်က End တာဆိုရင် Firebase ပေါ်က Signal Data တွေပါ ဖျက်ပစ်မည်
     if (!fromRemote && roomID) {
-        await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null);
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null).catch(e=>e);
     }
 };
 
