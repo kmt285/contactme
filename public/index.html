@@ -1643,12 +1643,14 @@ const rtcConfig = {
     ]
 };
         
-// 📞 1. Call စတင်ခေါ်ဆိုသူ (Caller)
 window.startWebRTCCall = async function(winId) {
     const roomID = window[`pChatActiveRoom_${winId}`];
     if (!roomID) return customAlert("Please connect to a user first.");
 
     try {
+        // 🆕 ပြင်ဆင်ချက် - ဖုန်းခေါ်တိုင်း အဟောင်းတွေကျန်မနေအောင် Database ကို အရင်ရှင်းမယ်
+        await window.set(window.ref(window.db, `webrtc_calls/${roomID}`), null);
+        
         document.getElementById(`btnCall_${winId}`).style.display = 'none';
         document.getElementById(`btnEnd_${winId}`).style.display = 'inline-block';
         document.getElementById(`pVideoArea_${winId}`).style.display = 'flex';
@@ -1677,17 +1679,35 @@ window.startWebRTCCall = async function(winId) {
 
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
+        // 🆕 ပြင်ဆင်ချက် - Browser အားလုံးနဲ့ ကိုက်ညီမယ့် Video Tracker
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            // Cross-platform (PC to Mobile) ရုပ်မပေါ်တဲ့ ပြဿနာကို ဖြေရှင်းခြင်း
-            if (!remoteVideo.srcObject) {
-                remoteVideo.srcObject = new MediaStream();
+            if (event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            } else {
+                if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
+                remoteVideo.srcObject.addTrack(event.track);
             }
-            remoteVideo.srcObject.addTrack(event.track);
             
-            // Video ရောက်လာရင် "Connecting..." ဆိုတဲ့ စာသားကို ဖျောက်ပေးမယ်
+            // Mobile တွေမှာ Auto play ပိတ်ထားရင် အတင်း play ခိုင်းမယ်
+            remoteVideo.play().catch(e => console.log("Play error:", e));
+            
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
+        };
+
+        // 🆕 ပြင်ဆင်ချက် - Connection အခြေအနေကို စောင့်ကြည့်မယ် (Fail ဖြစ်ရင် သိအောင်လို့)
+        pc.oniceconnectionstatechange = () => {
+            const statusEl = document.getElementById(`remoteStatus_${winId}`);
+            if(pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                if(statusEl) {
+                    statusEl.innerText = "Connection Failed!";
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'red';
+                }
+            } else if (pc.iceConnectionState === 'connected') {
+                if(statusEl) statusEl.style.display = 'none';
+            }
         };
 
         pc.onicecandidate = event => {
@@ -1770,17 +1790,35 @@ window.answerWebRTCCall = async function(winId) {
 
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
+        // 🆕 ပြင်ဆင်ချက် - Browser အားလုံးနဲ့ ကိုက်ညီမယ့် Video Tracker
         pc.ontrack = event => {
             const remoteVideo = document.getElementById(`remoteVideo_${winId}`);
-            // Cross-platform (PC to Mobile) ရုပ်မပေါ်တဲ့ ပြဿနာကို ဖြေရှင်းခြင်း
-            if (!remoteVideo.srcObject) {
-                remoteVideo.srcObject = new MediaStream();
+            if (event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            } else {
+                if (!remoteVideo.srcObject) remoteVideo.srcObject = new MediaStream();
+                remoteVideo.srcObject.addTrack(event.track);
             }
-            remoteVideo.srcObject.addTrack(event.track);
             
-            // Video ရောက်လာရင် "Connecting..." ဆိုတဲ့ စာသားကို ဖျောက်ပေးမယ်
+            // Mobile တွေမှာ Auto play ပိတ်ထားရင် အတင်း play ခိုင်းမယ်
+            remoteVideo.play().catch(e => console.log("Play error:", e));
+            
             const statusEl = document.getElementById(`remoteStatus_${winId}`);
             if(statusEl) statusEl.style.display = 'none';
+        };
+
+        // 🆕 ပြင်ဆင်ချက် - Connection အခြေအနေကို စောင့်ကြည့်မယ် (Fail ဖြစ်ရင် သိအောင်လို့)
+        pc.oniceconnectionstatechange = () => {
+            const statusEl = document.getElementById(`remoteStatus_${winId}`);
+            if(pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                if(statusEl) {
+                    statusEl.innerText = "Connection Failed!";
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'red';
+                }
+            } else if (pc.iceConnectionState === 'connected') {
+                if(statusEl) statusEl.style.display = 'none';
+            }
         };
 
         pc.onicecandidate = event => {
