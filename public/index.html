@@ -822,14 +822,12 @@
                     else if (url.includes('v=')) videoId = new URL(url).searchParams.get('v');
                     contentHtml = `<div style="background: #111; padding: 10px; display: flex; justify-content: center; align-items: center; flex: 1; width: 100%; box-sizing: border-box;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
                 
-                // 🆕 Google Drive Link များကို ဖိုင် (File) ရော၊ Folder ပါ Web တွင်ကြည့်နိုင်အောင် အလိုအလျောက် ပြောင်းပေးမည့်အပိုင်း
+                // 🆕 Google Drive Link များအတွက် (စာတန်းများ ဖျက်ထားသည်)
                 } else if (lowerUrl.includes('drive.google.com/')) {
                     let fileId = '';
                     let folderId = '';
                     
-                    // URL ထဲမှ Folder ID ကို ဆွဲထုတ်ခြင်း (ဥပမာ - /drive/folders/ID)
                     const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-                    // URL ထဲမှ File ID ကို ဆွဲထုတ်ခြင်း (ဥပမာ - /file/d/ID သို့မဟုတ် ?id=ID)
                     const fileMatch1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
                     const fileMatch2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
                     
@@ -842,19 +840,17 @@
                     }
 
                     if (folderId) {
-                        // 📁 Folder ဆိုလျှင် Embedded Folder View ဖြင့် ပြမည် (Grid ပုံစံ)
                         const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#grid`;
-                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;"><a href="${url}" target="_blank" style="color: blue;"><b>🌍 ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a></div><iframe src="${embedUrl}" style="width: 100%; flex: 1; border: none;" allowfullscreen></iframe></div>`;
+                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><iframe src="${embedUrl}" style="width: 100%; flex: 1; border: none;" allowfullscreen></iframe></div>`;
                     } else if (fileId) {
-                        // 📄 File ဆိုလျှင် Preview View ဖြင့် ပြမည်
                         const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;"><a href="${url}" target="_blank" style="color: blue;"><b>🌍 ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a></div><iframe src="${previewUrl}" style="width: 100%; flex: 1; border: none;" allowfullscreen></iframe></div>`;
+                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><iframe src="${previewUrl}" style="width: 100%; flex: 1; border: none;" allowfullscreen></iframe></div>`;
                     } else {
-                        // ID ရှာမတွေ့ပါက မူလအတိုင်းထားမည်
-                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;"><a href="${url}" target="_blank" style="color: blue;"><b>🌍 ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a></div><iframe src="${url}" style="width: 100%; flex: 1; border: none;"></iframe></div>`;
+                        contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><iframe src="${url}" style="width: 100%; flex: 1; border: none;"></iframe></div>`;
                     }
                 } else {
-                    contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><div style="padding: 8px; background: #dfdfdf; border-bottom: inset 2px; text-align: center; font-size: 13px;"><a href="${url}" target="_blank" style="color: blue;"><b>🌍 ဤနေရာကိုနှိပ်၍ Browser ဖြင့်ဖွင့်ပါ</b></a></div><iframe src="${url}" style="width: 100%; flex: 1; border: none;"></iframe></div>`;
+                    // အခြား သာမန် Website Link များအတွက် (စာတန်းများ ဖျက်ထားသည်)
+                    contentHtml = `<div style="display: flex; flex-direction: column; flex: 1; height: 100%; background: #fff;"><iframe src="${url}" style="width: 100%; flex: 1; border: none;"></iframe></div>`;
                 }
                 contentArea.innerHTML = contentHtml;
             }
